@@ -20,8 +20,22 @@ namespace LinkUp254.Models
 
         public ICollection<Event> EventsHosted { get; set; } = new List<Event>();
 
-        
+        public ICollection<EventAtendee> EventAtendee { get; set; } = new List<EventAtendee>();
+
         public ICollection<Event> EventsJoined { get; set; } = new List<Event>();
 
-    }    
+        public Users() { }
+
+
+        public Users(string firstName, string lastName, string email, string phone, string passwordHash)
+        {
+            FirstName = firstName;
+            LastName = lastName;
+            Email = email;
+            Phone = phone;
+            PasswordHash = passwordHash;
+        }
+
+    }
+
 }
