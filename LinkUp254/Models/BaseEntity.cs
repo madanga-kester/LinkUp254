@@ -8,16 +8,25 @@ namespace LinkUp254.Models
         [Key]
         public int Id { get; set; }
 
-        [Required]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Required]
+        public DateTime CreatedAt { get; set; } 
         public DateTime? UpdatedAt { get; set; }
+
+
 
         [Required]
         public bool IsActive { get; set; } = true;
 
-        public BaseEntity() { }
+        
+
+
+        public BaseEntity()
+        {
+           CreatedAt= DateTime.UtcNow;
+
+        }
+
 
 
         public BaseEntity(DateTime createdAt, DateTime? updatedAt, bool isActive)
@@ -26,5 +35,8 @@ namespace LinkUp254.Models
             UpdatedAt = updatedAt;
             IsActive = isActive;
         }
+
+
+
     }
 }
