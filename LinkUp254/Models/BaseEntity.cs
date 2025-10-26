@@ -16,5 +16,15 @@ namespace LinkUp254.Models
 
         [Required]
         public bool IsActive { get; set; } = true;
+
+        public BaseEntity() { }
+
+
+        public BaseEntity(DateTime createdAt, DateTime? updatedAt, bool isActive)
+        {
+            CreatedAt = createdAt;
+            UpdatedAt = updatedAt;
+            IsActive = isActive;
+        }
     }
 }

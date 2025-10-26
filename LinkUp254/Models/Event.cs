@@ -25,6 +25,9 @@ namespace LinkUp254.Models
 
         public string? CoverImage { get; set; }
 
+
+        [Required]
+
         public int HostId { get; set; }
        public string HostName { get; set; } = string.Empty;
 
@@ -42,7 +45,7 @@ namespace LinkUp254.Models
 
         public Event() {}
 
-        public Event(string eventid, string title, string description, string location, int hostId, string hostName)
+        public Event(string eventid, string title, string description, string location, int hostId, string hostName) : base()
         {
             EventId = eventid;
             Title = title;

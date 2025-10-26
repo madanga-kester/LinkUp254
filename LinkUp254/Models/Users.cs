@@ -27,7 +27,7 @@ namespace LinkUp254.Models
         public Users() { }
 
 
-        public Users(string firstName, string lastName, string email, string phone, string passwordHash)
+        public Users(string firstName, string lastName, string email, string phone, string passwordHash) : base()
         {
             FirstName = firstName;
             LastName = lastName;
