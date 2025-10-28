@@ -13,13 +13,8 @@ namespace LinkUp254.Models
         public DateTime CreatedAt { get; set; } 
         public DateTime? UpdatedAt { get; set; }
 
-
-
         [Required]
         public bool IsActive { get; set; } = true;
-
-        
-
 
         public BaseEntity()
         {

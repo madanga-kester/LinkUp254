@@ -43,6 +43,11 @@ namespace LinkUp254.Models
         public ICollection<EventAtendee> EventAtendee { get; set; } = new List<EventAtendee>();
 
 
+        public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+
+
+
+
         public Event() {}
 
         public Event(string eventid, string title, string description, string location, int hostId, string hostName) : base()
