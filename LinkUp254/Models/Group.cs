@@ -19,8 +19,6 @@ namespace LinkUp254.Models
         public string? CoverImage { get; set; }
 
 
-
-
         // The user who created the group
         [ForeignKey("CreatedBy")]
         public int CreatedById { get; set; }
@@ -29,5 +27,6 @@ namespace LinkUp254.Models
 
 
         public ICollection<Users> Members { get; set; } = new List<Users>();
+         public ICollection<>
     }
 }
