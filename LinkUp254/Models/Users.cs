@@ -24,6 +24,8 @@ namespace LinkUp254.Models
 
         public ICollection<Event> EventsJoined { get; set; } = new List<Event>();
 
+        public  ICollection<ChatMessage> SentMessages { get; set; } = new List<ChatMessage>();
+
         public Users() { }
 
 
