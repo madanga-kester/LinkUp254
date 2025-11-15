@@ -38,3 +38,4 @@ namespace LinkUp254.Models
         public Event? Event { get; set; }
     }
 }
+ 
