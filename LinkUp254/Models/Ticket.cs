@@ -20,6 +20,7 @@ namespace LinkUp254.Models
         public string? TicketStatus { get; set; } // e.g., Active, Cancelled, Used
 
         public int TicketId { get; set; }
+
         
         public string BuyerId { get; set; }
         public string? PaymentId { get; set; } // null for free tickets
