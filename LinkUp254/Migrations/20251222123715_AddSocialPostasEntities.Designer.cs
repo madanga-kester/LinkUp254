@@ -4,6 +4,7 @@ using LinkUp254.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LinkUp254.Migrations
 {
     [DbContext(typeof(LinkUpContext))]
-    partial class LinkUpContextModelSnapshot : ModelSnapshot
+    [Migration("20251222123715_AddSocialPostasEntities")]
+    partial class AddSocialPostasEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -113,7 +116,6 @@ namespace LinkUp254.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("Price")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("StartTime")
@@ -129,9 +131,14 @@ namespace LinkUp254.Migrations
                     b.Property<int?>("UsersId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("UsersId1")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("UsersId");
+
+                    b.HasIndex("UsersId1");
 
                     b.ToTable("Events");
                 });
@@ -254,7 +261,6 @@ namespace LinkUp254.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("Price")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("PurchaseDate")
@@ -396,6 +402,10 @@ namespace LinkUp254.Migrations
                     b.HasOne("LinkUp254.Models.Users", null)
                         .WithMany("EventsHosted")
                         .HasForeignKey("UsersId");
+
+                    b.HasOne("LinkUp254.Models.Users", null)
+                        .WithMany("EventsJoined")
+                        .HasForeignKey("UsersId1");
                 });
 
             modelBuilder.Entity("LinkUp254.Models.EventAtendee", b =>
@@ -463,6 +473,8 @@ namespace LinkUp254.Migrations
                     b.Navigation("EventAtendee");
 
                     b.Navigation("EventsHosted");
+
+                    b.Navigation("EventsJoined");
 
                     b.Navigation("SentMessages");
                 });
