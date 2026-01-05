@@ -2,7 +2,7 @@
 
 namespace LinkUp254.DTOs.Posts
 {
-    public class CreatePostInPut
+    public class CreatePostDto
     
 
         {
