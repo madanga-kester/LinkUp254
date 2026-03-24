@@ -1,4 +1,4 @@
-using LinkUp254.Models;
+using LinkUp254.Database;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
