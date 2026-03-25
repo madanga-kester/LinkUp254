@@ -1,7 +1,8 @@
 ﻿using LinkUp254.Features.Shared;
+
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace LinkUp254.Features.Event
+namespace LinkUp254.Features.Events
 {
     public class EventInterest : BaseEntity
     {

@@ -1,4 +1,4 @@
-﻿using LinkUp254.Features.Event;
+﻿using LinkUp254.Features.Events;
 using LinkUp254.Features.Shared;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -16,10 +16,10 @@ namespace LinkUp254.Features.Reviews
         public string Comment { get; set; } = string.Empty;
 
         [ForeignKey("UserId")]
-        public Users User { get; set; } = null!;
+        public User User { get; set; } = null!;
 
         [ForeignKey("EventId")]
-        public Event Event { get; set; } = null!;
+        public Events.Event Event { get; set; } = null!;
 
         public Review() { }
 

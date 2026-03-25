@@ -18,6 +18,6 @@ namespace LinkUp254.Features.Shared
         public bool IsRead { get; set; } = false;
 
         [ForeignKey(nameof(UserId))]
-        public Users User { get; set; } = null!;
+        public User User { get; set; } = null!;
     }
 }

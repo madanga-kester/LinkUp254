@@ -1,4 +1,5 @@
-﻿namespace LinkUp254.Features.Post.Posts
+﻿
+namespace LinkUp254.Features.Post.Posts
 {
     public class CommentDto
     {

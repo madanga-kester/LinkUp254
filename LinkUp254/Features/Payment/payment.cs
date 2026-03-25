@@ -1,4 +1,4 @@
-﻿using LinkUp254.Features.Event;
+﻿using LinkUp254.Features.Events;
 using LinkUp254.Features.Shared;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -31,13 +31,13 @@ namespace LinkUp254.Features.Payment
         public int UserId { get; set; }
 
         [ForeignKey("UserId")]
-        public Users? User { get; set; }
+        public User? User { get; set; }
 
         // linking to Event
         public int? EventId { get; set; }
 
         [ForeignKey("EventId")]
-        public Event? Event { get; set; }
+        public Events.Event? Event { get; set; }
     }
 }
  

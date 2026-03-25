@@ -8,7 +8,7 @@ namespace LinkUp254.Features.Shared
         public int InterestId { get; set; }
 
         [ForeignKey("UserId")]
-        public Users User { get; set; } = null!;
+        public User User { get; set; } = null!;
 
         [ForeignKey("InterestId")]
         public Interest Interest { get; set; } = null!;

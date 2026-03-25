@@ -16,7 +16,7 @@ namespace LinkUp254.Features.Post
         public string? Visibility { get; set; } = "Public"; // Public, Followers, Private
 
         [ForeignKey(nameof(UserId))]
-        public Users Author { get; set; } = null!;
+        public User Author { get; set; } = null!;
 
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
        // public ICollection<PostLike> Likes { get; set; } = new List<PostLike>();

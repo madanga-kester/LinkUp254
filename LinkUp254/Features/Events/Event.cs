@@ -1,7 +1,7 @@
 ﻿using LinkUp254.Features.Shared;
 using System.ComponentModel.DataAnnotations;
 
-namespace LinkUp254.Features.Event
+namespace LinkUp254.Features.Events
 {
     public class Event : BaseEntity
     {
@@ -14,12 +14,12 @@ namespace LinkUp254.Features.Event
         public decimal? Price { get; set; }
         public string? CoverImage { get; set; }
 
-        // Foreign key only — no navigation property = no ambiguity
+        // Foreign key only
         [Required] public int HostId { get; set; }
         public string HostName { get; set; } = string.Empty;
 
-        // Many-to-many via explicit join entity
-        public ICollection<EventAtendee> EventAtendees { get; set; } = new List<EventAtendee>();
+        // Fixed navigation property
+        public ICollection<EventAttendee> EventAttendees { get; set; } = new List<EventAttendee>();
 
         public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
 

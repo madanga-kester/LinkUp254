@@ -8,9 +8,9 @@ namespace LinkUp254.Features.Shared
         public int BlockedId { get; set; }
 
         [ForeignKey(nameof(BlockerId))]
-        public Users Blocker { get; set; } = null!;
+        public User Blocker { get; set; } = null!;
 
         [ForeignKey(nameof(BlockedId))]
-        public Users Blocked { get; set; } = null!;
+        public User Blocked { get; set; } = null!;
     }
 }

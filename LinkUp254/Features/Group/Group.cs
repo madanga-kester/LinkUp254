@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using LinkUp254.Features.Shared;
 using Microsoft.EntityFrameworkCore;
 
-namespace LinkUp254.Features.Group
+namespace LinkUp254.Features.Groups
 {
    
     public class Group : BaseEntity
@@ -22,10 +22,10 @@ namespace LinkUp254.Features.Group
         public int CreatedById { get; set; }
 
         [ForeignKey("CreatedById")]
-        public Users? CreatedBy { get; set; }
+        public User? CreatedBy { get; set; }
 
         // Many-to-many relationship: Users → Groups (Members)
-        public ICollection<Users> Members { get; set; } = new List<Users>();
+        public ICollection<User> Members { get; set; } = new List<User>();
 
         // posts, events, or join requests in the future
         // public ICollection<Post> Posts { get; set; } = new List<Post>();

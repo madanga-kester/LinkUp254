@@ -1,7 +1,7 @@
 ﻿using LinkUp254.Features.Shared;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace LinkUp254.Features.Group
+namespace LinkUp254.Features.Groups
 {
     public class GroupJoinRequest : BaseEntity
     {
@@ -14,7 +14,7 @@ namespace LinkUp254.Features.Group
         public Group Group { get; set; } = null!;
 
         [ForeignKey("UserId")]
-        public Users User { get; set; } = null!;
+        public User User { get; set; } = null!;
 
         public GroupJoinRequest() { }
 
@@ -25,3 +25,4 @@ namespace LinkUp254.Features.Group
         }
     }
 }
+

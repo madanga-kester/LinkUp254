@@ -17,6 +17,6 @@ namespace LinkUp254.Features.Shared
         public string Reason { get; set; } = string.Empty;
 
         [ForeignKey(nameof(ReporterId))]
-        public Users Reporter { get; set; } = null!;
+        public User Reporter { get; set; } = null!;
     }
 }

@@ -1,12 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using LinkUp254.Features.Shared;
+﻿using LinkUp254.Features.Shared;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace LinkUp254.Features.Event
+namespace LinkUp254.Features.Events
 {
     [PrimaryKey(nameof(EventId), nameof(UserId))]
-    public class EventAtendee : BaseEntity
+    public class EventAttendee : BaseEntity
     {
         [Required]
         public int EventId { get; set; }
@@ -19,15 +19,15 @@ namespace LinkUp254.Features.Event
         public Event Event { get; set; } = null!;
 
         [ForeignKey(nameof(UserId))]
-        public Users User { get; set; } = null!;
+        public User User { get; set; } = null!;
 
-        // Optional: extra payload (e.g., RSVP status, joined date, etc.)
+        // Optional extra info
         public string? RsvpStatus { get; set; } = "Going";
 
         // Constructors
-        public EventAtendee() { }
+        public EventAttendee() { }
 
-        public EventAtendee(int eventId, int userId)
+        public EventAttendee(int eventId, int userId)
         {
             EventId = eventId;
             UserId = userId;

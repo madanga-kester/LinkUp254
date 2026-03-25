@@ -22,7 +22,7 @@ namespace LinkUp254.Features.Post
         public Post Post { get; set; } = null!;
 
         [ForeignKey(nameof(UserId))]
-        public Users User { get; set; } = null!;
+        public User User { get; set; } = null!;
 
         [ForeignKey(nameof(ParentCommentId))]
         public Comment? ParentComment { get; set; }

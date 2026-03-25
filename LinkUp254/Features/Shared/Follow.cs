@@ -8,9 +8,9 @@ namespace LinkUp254.Features.Shared
         public int FollowingId { get; set; }
 
         [ForeignKey(nameof(FollowerId))]
-        public Users Follower { get; set; } = null!;
+        public User Follower { get; set; } = null!;
 
         [ForeignKey(nameof(FollowingId))]
-        public Users Following { get; set; } = null!;
+        public User Following { get; set; } = null!;
     }
 }

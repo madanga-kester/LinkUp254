@@ -1,4 +1,4 @@
-﻿using LinkUp254.Features.Event;
+﻿using LinkUp254.Features.Events;
 using LinkUp254.Features.Messages;
 using LinkUp254.Features.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -12,33 +12,32 @@ namespace LinkUp254.Database
         {
         }
 
-        public DbSet<Users> Users { get; set; }
-        public DbSet<Event> Events { get; set; }
-        public DbSet<EventAtendee> EventAtendees { get; set; }
-        public DbSet<Ticket> Tickets { get; set; }
-        public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Event> Events { get; set; } = null!;
+        public DbSet<EventAttendee> EventAttendees { get; set; } = null!;
+        public DbSet<Ticket> Tickets { get; set; } = null!;
+        public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            
-            modelBuilder.Entity<EventAtendee>()
+            // Composite key for EventAttendee
+            modelBuilder.Entity<EventAttendee>()
                 .HasKey(ea => new { ea.EventId, ea.UserId });
 
-            modelBuilder.Entity<EventAtendee>()
+            // Relationships
+            modelBuilder.Entity<EventAttendee>()
                 .HasOne(ea => ea.Event)
-                .WithMany(e => e.EventAtendees)
+                .WithMany(e => e.EventAttendees)
                 .HasForeignKey(ea => ea.EventId);
 
-            modelBuilder.Entity<EventAtendee>()
+            modelBuilder.Entity<EventAttendee>()
                 .HasOne(ea => ea.User)
-                .WithMany(u => u.EventAtendee)
+                .WithMany(u => u.EventAttendees)
                 .HasForeignKey(ea => ea.UserId);
 
-            
-
-
+            // Precision for price fields
             modelBuilder.Entity<Event>()
                 .Property(e => e.Price)
                 .HasPrecision(18, 2);
