@@ -19,8 +19,8 @@ namespace LinkUp254.Features.Post
         public User Author { get; set; } = null!;
 
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
-       // public ICollection<PostLike> Likes { get; set; } = new List<PostLike>();
-       // public ICollection<PostShare> Shares { get; set; } = new List<PostShare>();
+        public ICollection<PostLike> Likes { get; set; } = new List<PostLike>();
+        public ICollection<PostShare> Shares { get; set; } = new List<PostShare>();
         public ICollection<MediaFile> MediaFiles { get; set; } = new List<MediaFile>();
     }
 }

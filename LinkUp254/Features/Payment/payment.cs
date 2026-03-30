@@ -26,14 +26,15 @@ namespace LinkUp254.Features.Payment
         [MaxLength(250)]
         public string StatusMessage { get; set; } = string.Empty;
 
-        // Foreign key to User
+        
+
         [Required]
         public int UserId { get; set; }
 
         [ForeignKey("UserId")]
         public User? User { get; set; }
 
-        // linking to Event
+    
         public int? EventId { get; set; }
 
         [ForeignKey("EventId")]

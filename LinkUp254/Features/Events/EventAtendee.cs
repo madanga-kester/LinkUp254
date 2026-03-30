@@ -14,17 +14,22 @@ namespace LinkUp254.Features.Events
         [Required]
         public int UserId { get; set; }
 
-        // Navigation properties
+
+
+        
         [ForeignKey(nameof(EventId))]
         public Event Event { get; set; } = null!;
 
         [ForeignKey(nameof(UserId))]
         public User User { get; set; } = null!;
 
-        // Optional extra info
+
+
+
         public string? RsvpStatus { get; set; } = "Going";
 
-        // Constructors
+
+
         public EventAttendee() { }
 
         public EventAttendee(int eventId, int userId)

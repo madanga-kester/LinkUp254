@@ -13,8 +13,8 @@ namespace LinkUp254.Features.Shared
         [ForeignKey("InterestId")]
         public Interest Interest { get; set; } = null!;
 
-        // Optional tracking fields
-        public int EngagementTotals { get; set; } = 0;  // based on events attended or chats
+       
+        public int EngagementTotals { get; set; } = 0;  
 
         public UserInterest() { }
 

@@ -1,22 +1,37 @@
 using LinkUp254.Database;
+using LinkUp254.Features.Auth;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+//  services container.
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 // Register LinkUpContext with SQL Server
 builder.Services.AddDbContext<LinkUpContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Addin Swagger 
+
+// Identity Password Hashing
+builder.Services.AddScoped<IPasswordHasher<LinkUp254.Features.Shared.User>, PasswordHasher<LinkUp254.Features.Shared.User>>();
+
+
+// Auth Services - Custom 
+builder.Services.AddScoped<AuthServices>();
+
+
+ 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+
+
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -28,3 +43,12 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
+
+
+
+
+
+
+

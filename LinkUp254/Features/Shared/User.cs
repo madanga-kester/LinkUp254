@@ -16,7 +16,19 @@ namespace LinkUp254.Features.Shared
         public required string Password { get; set; } = string.Empty;
         public string? ProfilePicture { get; set; }
 
-        // Navigation properties
+
+
+
+        public int? Age { get; set; }
+        public string? City { get; set; }
+        public string? Country { get; set; }
+        public string? State { get; set; }
+        public string? ZipCode { get; set; }
+        public string? Bio { get; set; }
+        public string? Website { get; set; }
+
+
+        // Navigations
         public ICollection<Events.Event> EventsHosted { get; set; } = new List<Events.Event>();
         public ICollection<EventAttendee> EventAttendees { get; set; } = new List<EventAttendee>();
         public ICollection<ChatMessage> SentMessages { get; set; } = new List<ChatMessage>();
@@ -24,13 +36,22 @@ namespace LinkUp254.Features.Shared
         // Constructors
         public User() { }
 
-        public User(string firstName, string lastName, string email, string phoneNumber, string password)
+        public User(string firstName, string lastName, string email, string phoneNumber, string password, int age, string city, string country, string state,
+            string zipcode, string bio, string webssite)
         {
             FirstName = firstName;
             LastName = lastName;
             Email = email;
             PhoneNumber = phoneNumber;
             Password = password;
+            Age = age;
+            City = city;
+            Country = country;
+            State = state;
+            ZipCode = zipcode;
+            Website = webssite;
+            Role = "User";
+
         }
     }
 }

@@ -14,11 +14,16 @@ namespace LinkUp254.Features.Events
         public decimal? Price { get; set; }
         public string? CoverImage { get; set; }
 
-        // Foreign key only
+        
+
+
+
         [Required] public int HostId { get; set; }
         public string HostName { get; set; } = string.Empty;
 
-        // Fixed navigation property
+
+
+
         public ICollection<EventAttendee> EventAttendees { get; set; } = new List<EventAttendee>();
 
         public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
