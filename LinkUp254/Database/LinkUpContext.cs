@@ -1,7 +1,7 @@
 ﻿using LinkUp254.Features.Events;
 using LinkUp254.Features.Messages;
 using LinkUp254.Features.Shared;
-using LinkUp254.Features.Auth.Models;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace LinkUp254.Database
@@ -121,7 +121,7 @@ namespace LinkUp254.Database
             });
         }
 
-        // Auto timestamps
+        // Auto timestamping
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {

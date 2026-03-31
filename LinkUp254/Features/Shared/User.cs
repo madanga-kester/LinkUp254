@@ -28,6 +28,9 @@ namespace LinkUp254.Features.Shared
         public string? Website { get; set; }
 
 
+       
+        
+
         // Navigations
         public ICollection<Events.Event> EventsHosted { get; set; } = new List<Events.Event>();
         public ICollection<EventAttendee> EventAttendees { get; set; } = new List<EventAttendee>();

@@ -3,38 +3,37 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using LinkUp254.Features.Shared;
 
-namespace LinkUp254.Features.Auth.Models
+namespace LinkUp254.Database
 {
-    public class OtpCodes : BaseEntity
+    public class OtpCodes
     {
-      
-        [Required]
-        [StringLength(10)]
-        public required string Code { get; set; }
+        [Key]
+        public int Id { get; set; }
 
         [Required]
-        [StringLength(255)]
-        public required string Identifier { get; set; }
+        public string Code { get; set; } = string.Empty;
 
-       
         [Required]
-        public DateTime ExpiresAt { get; set; }
+        public string Identifier { get; set; } = string.Empty;  // Email or Phone
 
-       
         [Required]
-        public bool IsUsed { get; set; } = false;
+        public string Purpose { get; set; } = "Standalone";  // "Signup", "Login", "PasswordReset", "Standalone"
+
+        public string? OtpType { get; set; } = "Numeric";
+
+        public int AttemptCount { get; set; } = 0;
+
+
+
+        public User? User { get; set; }  // Reference to User entity
 
         
+
+        [ForeignKey(nameof(User))]
         public int? UserId { get; set; }
 
-        [ForeignKey(nameof(UserId))]
-        public User? User { get; set; }
-
-       
-        [StringLength(50)]
-        public string? OtpType { get; set; } = "General";
-
-       
-        public int AttemptCount { get; set; } = 0;
+        public DateTime ExpiresAt { get; set; }
+        public bool IsUsed { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

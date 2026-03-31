@@ -22,13 +22,13 @@ namespace LinkUp254.Features.Messages
         [ForeignKey("SenderId")]
         public User? Sender { get; set; }
 
-        // Optional- Message sent in a Group
+        //  Message sent in a Group
         public int? GroupId { get; set; }
 
         [ForeignKey("GroupId")]
         public Group? Group { get; set; }
 
-        // Optional- Message sent in an Event
+        //  Message sent in an Event
         public int? EventId { get; set; }
 
         [ForeignKey("EventId")]

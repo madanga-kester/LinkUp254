@@ -24,5 +24,11 @@ namespace LinkUp254.Features.Auth.DTOs
         [StringLength(100, MinimumLength = 8)]
         [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$", ErrorMessage = "Password must contain uppercase, lowercase, number and special character")]
         public required string Password { get; set; }
+
+
+
+        [Required]
+        [RegularExpression("^(Email|Phone)$", ErrorMessage = "Must be 'Email' or 'Phone'")]
+        public required string OtpDeliveryMethod { get; set; } 
     }
 }
