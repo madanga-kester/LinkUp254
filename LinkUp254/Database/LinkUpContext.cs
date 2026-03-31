@@ -1,5 +1,5 @@
 ﻿using LinkUp254.Features.Events;
-using LinkUp254.Features.Messages;
+using LinkUp254.Features.Group.Messages;
 using LinkUp254.Features.Shared;
 
 using Microsoft.EntityFrameworkCore;

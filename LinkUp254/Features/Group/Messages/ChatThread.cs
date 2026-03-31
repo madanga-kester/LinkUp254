@@ -1,7 +1,7 @@
 ﻿using LinkUp254.Features.Shared;
 using System.ComponentModel.DataAnnotations;
 
-namespace LinkUp254.Features.Messages
+namespace LinkUp254.Features.Group.Messages
 {
     public class ChatThread : BaseEntity
     {

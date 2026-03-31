@@ -1,17 +1,16 @@
 ﻿using LinkUp254.Database;
 using LinkUp254.Features.Auth;
+using LinkUp254.Features.AdminAuth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// === SERVICES ===
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -27,8 +26,8 @@ builder.Services.AddDbContext<LinkUpContext>(options =>
 
 builder.Services.AddScoped<IPasswordHasher<LinkUp254.Features.Shared.User>, PasswordHasher<LinkUp254.Features.Shared.User>>();
 builder.Services.AddScoped<AuthServices>();
+builder.Services.AddScoped<AdminAuthServices>();
 
-// JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);
 
@@ -54,7 +53,6 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -66,10 +64,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// === BUILD APP ===
 var app = builder.Build();
 
-// Auto-create DB
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<LinkUpContext>();
@@ -84,7 +80,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
-app.UseAuthentication();  // ← BEFORE UseAuthorization
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
