@@ -14,7 +14,7 @@ namespace LinkUp254.Features.Auth.DTOs
         public required string Code { get; set; }
 
         [Required]
-        [RegularExpression("^(Signup|Login|PasswordReset)$")]
-        public required string Purpose { get; set; }  // reason Why  OTP being verified?
+        [RegularExpression("^(Signup|Login|PasswordReset|AdminLogin)$")]
+        public required string Purpose { get; set; } // Why  OTP being verified?
     }
 }
