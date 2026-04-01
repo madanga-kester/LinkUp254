@@ -1,4 +1,4 @@
-﻿using LinkUp254.Features.Events;
+﻿using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Shared;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -38,7 +38,7 @@ namespace LinkUp254.Features.Payment
         public int? EventId { get; set; }
 
         [ForeignKey("EventId")]
-        public Events.Event? Event { get; set; }
+        public Event? Event { get; set; }
     }
 }
  

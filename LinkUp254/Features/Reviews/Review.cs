@@ -1,4 +1,4 @@
-﻿using LinkUp254.Features.Events;
+﻿using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Shared;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -19,7 +19,7 @@ namespace LinkUp254.Features.Reviews
         public User User { get; set; } = null!;
 
         [ForeignKey("EventId")]
-        public Events.Event Event { get; set; } = null!;
+        public Event Event { get; set; } = null!;
 
         public Review() { }
 

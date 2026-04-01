@@ -1,4 +1,4 @@
-﻿using LinkUp254.Features.Events;
+﻿using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Shared;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

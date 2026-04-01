@@ -1,11 +1,13 @@
 ﻿using LinkUp254.Features.AdminAuth.DTOs;
 using LinkUp254.Features.Auth.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace LinkUp254.Features.AdminAuth
 {
     [ApiController]
-    [Route("api/admin/auth")] 
+    [Route("api/admin/auth")]
     public class AdminAuthController : ControllerBase
     {
         private readonly AdminAuthServices _adminAuthServices;
@@ -43,6 +45,24 @@ namespace LinkUp254.Features.AdminAuth
 
             var result = await _adminAuthServices.VerifyOtpLoginAsync(dto);
             return result.IsSuccess ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("check-admin")]
+        [Authorize]
+        public IActionResult CheckAdmin()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            var email = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("Role")?.Value;
+            var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
+
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(role))
+                return Unauthorized(new { IsSuccess = false, Message = "Invalid token" });
+
+            var isAdmin = role.Equals("Admin", StringComparison.OrdinalIgnoreCase)
+                       || isAdminClaim?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+
+            return Ok(new { IsSuccess = true, IsAdmin = isAdmin, Role = role, Email = email, UserId = userId });
         }
 
         [HttpPost("logout")]

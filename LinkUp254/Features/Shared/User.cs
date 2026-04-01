@@ -1,4 +1,4 @@
-﻿using LinkUp254.Features.Events;
+﻿using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Group.Messages;
 
 namespace LinkUp254.Features.Shared
@@ -32,7 +32,7 @@ namespace LinkUp254.Features.Shared
         
 
         // Navigations
-        public ICollection<Events.Event> EventsHosted { get; set; } = new List<Events.Event>();
+        public ICollection<Event> EventsHosted { get; set; } = new List<Event>();
         public ICollection<EventAttendee> EventAttendees { get; set; } = new List<EventAttendee>();
         public ICollection<ChatMessage> SentMessages { get; set; } = new List<ChatMessage>();
 

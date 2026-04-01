@@ -33,6 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Features\Events\EventDtos\" />
     <Folder Include="Features\Event\DTOs\" />
     <Folder Include="Features\Group\DTOs\" />
     <Folder Include="Features\Group\Messages\DTOs\" />

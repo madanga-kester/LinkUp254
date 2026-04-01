@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace LinkUp254.Features.Events
+namespace LinkUp254.Features.Events.models
 {
     public class Ticket : BaseEntity
     {

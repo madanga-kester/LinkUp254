@@ -1,4 +1,4 @@
-﻿using LinkUp254.Features.Events;
+﻿using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Group.Messages;
 using LinkUp254.Features.Shared;
 

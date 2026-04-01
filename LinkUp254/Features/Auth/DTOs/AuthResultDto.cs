@@ -4,10 +4,10 @@
     {
         public bool IsSuccess { get; set; }
         public string Message { get; set; } = string.Empty;
-        public string? Token { get; set; }          // JWT token
+        public string? Token { get; set; }          // jt token
         public string? RefreshToken { get; set; }   
         public UserDto? User { get; set; }
-        public bool RequiresOtpVerification { get; set; }  // True if signup needs OTP
+        public bool RequiresOtpVerification { get; set; }  // True if the signup needs OTP
     }
 
     public class UserDto
