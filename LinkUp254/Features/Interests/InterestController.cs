@@ -94,5 +94,36 @@ namespace LinkUp254.Features.Interests
 
             return Ok(interests);
         }
+
+
+
+
+
+
+        // GET: api/interest/has-interests - Check if user has selected interests
+        [HttpGet("has-interests")]
+        [Authorize]
+        public async Task<IActionResult> HasInterests()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst("sub")?.Value;
+
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized(new { hasInterests = false });
+
+            var hasInterests = await _context.UserInterests
+                .AnyAsync(ui => ui.UserId == userId && ui.IsActive);
+
+            return Ok(new { hasInterests });
+        }
+
+
+
+
+
+
+
+
+
     }
 }

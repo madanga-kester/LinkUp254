@@ -233,6 +233,47 @@ namespace LinkUp254.Features.Auth
         }
 
         //  OTP LOGIN - REQUEST
+        //public async Task<AuthResult> RequestOtpLoginAsync(OtpLoginRequestDto dto)
+        //{
+        //    try
+        //    {
+        //        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        //        if (user == null)
+        //            return AuthResult.Failure("User not found.");
+
+        //        if (!user.IsActive)
+        //            return AuthResult.Failure("Account not activated.");
+
+
+
+        //        var identifier = dto.OtpDeliveryMethod?.ToLower() == "email" ? dto.Email : user.PhoneNumber;
+        //        if (string.IsNullOrEmpty(identifier))
+        //            return AuthResult.Failure($"{dto.OtpDeliveryMethod} not available for this account.");
+
+        //        var otpCode = await GenerateAndSaveOtpAsync(identifier, "Login");
+
+        //        // Send OTP with error handling
+        //        try
+        //        {
+        //            await SendOtpToIdentifierAsync(identifier, otpCode, dto.OtpDeliveryMethod ?? "Email");
+        //            _logger.LogInformation("OTP sent successfully to {Identifier} via {Method}", identifier, dto.OtpDeliveryMethod);
+        //        }
+        //        catch (Exception otpEx)
+        //        {
+        //            _logger.LogError(otpEx, "FAILED to send OTP to {Identifier} via {Method}", identifier, dto.OtpDeliveryMethod);
+        //            return AuthResult.Failure("Failed to send OTP. Please try again.");
+        //        }
+
+        //        _logger.LogInformation("OTP login requested: {Email} via {Method}", dto.Email, dto.OtpDeliveryMethod);
+        //        return AuthResult.Success($"OTP sent to {dto.OtpDeliveryMethod?.ToLower()}.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "OTP login request failed for {Email}", dto.Email);
+        //        return AuthResult.Failure("Failed to send OTP.");
+        //    }
+        //}
+        //  OTP LOGIN - REQUEST
         public async Task<AuthResult> RequestOtpLoginAsync(OtpLoginRequestDto dto)
         {
             try
@@ -244,7 +285,15 @@ namespace LinkUp254.Features.Auth
                 if (!user.IsActive)
                     return AuthResult.Failure("Account not activated.");
 
+                // ✅ VALIDATE: If phone delivery requested, check phone belongs to this email
+                if (dto.OtpDeliveryMethod?.ToLower() == "phone")
+                {
+                    if (string.IsNullOrEmpty(user.PhoneNumber))
+                        return AuthResult.Failure("No phone number linked to this account.");
 
+                    // ✅ Use the phone from database (not user input) to ensure it's linked
+                    // This prevents someone from entering a random phone with someone else's email
+                }
 
                 var identifier = dto.OtpDeliveryMethod?.ToLower() == "email" ? dto.Email : user.PhoneNumber;
                 if (string.IsNullOrEmpty(identifier))
@@ -274,7 +323,7 @@ namespace LinkUp254.Features.Auth
             }
         }
 
-        
+
         //  OTP LOGIN - VERIFY 
         public async Task<AuthResult> VerifyOtpLoginAsync(VerifyOtpLoginDto dto)
         {
