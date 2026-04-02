@@ -19,6 +19,9 @@ namespace LinkUp254.Database
         public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
         public DbSet<OtpCodes> OtpCodes { get; set; } = null!;
 
+        public DbSet<Interest> Interests { get; set; }
+        public DbSet<UserInterest> UserInterests { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

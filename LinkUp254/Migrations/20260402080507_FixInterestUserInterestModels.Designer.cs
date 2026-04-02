@@ -4,6 +4,7 @@ using LinkUp254.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LinkUp254.Migrations
 {
     [DbContext(typeof(LinkUpContext))]
-    partial class LinkUpContextModelSnapshot : ModelSnapshot
+    [Migration("20260402080507_FixInterestUserInterestModels")]
+    partial class FixInterestUserInterestModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -363,44 +366,6 @@ namespace LinkUp254.Migrations
                     b.ToTable("Group");
                 });
 
-            modelBuilder.Entity("LinkUp254.Features.Shared.Interest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Category")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Icon")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Interests");
-                });
-
             modelBuilder.Entity("LinkUp254.Features.Shared.User", b =>
                 {
                     b.Property<int>("Id")
@@ -488,42 +453,6 @@ namespace LinkUp254.Migrations
                     b.HasIndex("GroupId");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("LinkUp254.Features.Shared.UserInterest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("InterestId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("SelectedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InterestId");
-
-                    b.HasIndex("UserId", "InterestId")
-                        .IsUnique();
-
-                    b.ToTable("UserInterests");
                 });
 
             modelBuilder.Entity("LinkUp254.Database.OtpCodes", b =>
@@ -614,25 +543,6 @@ namespace LinkUp254.Migrations
                         .HasForeignKey("GroupId");
                 });
 
-            modelBuilder.Entity("LinkUp254.Features.Shared.UserInterest", b =>
-                {
-                    b.HasOne("LinkUp254.Features.Shared.Interest", "Interest")
-                        .WithMany("UserInterests")
-                        .HasForeignKey("InterestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LinkUp254.Features.Shared.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Interest");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("LinkUp254.Features.Events.models.Event", b =>
                 {
                     b.Navigation("EventAttendees");
@@ -643,11 +553,6 @@ namespace LinkUp254.Migrations
             modelBuilder.Entity("LinkUp254.Features.Groups.Group", b =>
                 {
                     b.Navigation("Members");
-                });
-
-            modelBuilder.Entity("LinkUp254.Features.Shared.Interest", b =>
-                {
-                    b.Navigation("UserInterests");
                 });
 
             modelBuilder.Entity("LinkUp254.Features.Shared.User", b =>

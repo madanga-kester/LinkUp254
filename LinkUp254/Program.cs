@@ -1,6 +1,7 @@
 ﻿using LinkUp254.Database;
 using LinkUp254.Features.Auth;
 using LinkUp254.Features.AdminAuth;
+using LinkUp254.Features.Shared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +25,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<LinkUpContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<IPasswordHasher<LinkUp254.Features.Shared.User>, PasswordHasher<LinkUp254.Features.Shared.User>>();
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<AuthServices>();
 builder.Services.AddScoped<AdminAuthServices>();
 
@@ -69,7 +70,10 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<LinkUpContext>();
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
+
     dbContext.Database.EnsureCreated();
+    await SeedData.InitializeAsync(dbContext, passwordHasher);
 }
 
 if (app.Environment.IsDevelopment())
@@ -84,4 +88,4 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();
