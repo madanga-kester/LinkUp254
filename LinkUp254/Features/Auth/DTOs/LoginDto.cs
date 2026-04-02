@@ -1,5 +1,4 @@
-﻿
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace LinkUp254.Features.Auth.DTOs
 {
@@ -12,6 +11,10 @@ namespace LinkUp254.Features.Auth.DTOs
     public class OtpLoginRequestDto
     {
         [Required][EmailAddress] public required string Email { get; set; }
+
+        
+        public string? Phone { get; set; }
+
         [Required]
         [RegularExpression("^(Email|Phone)$")]
         public required string OtpDeliveryMethod { get; set; }

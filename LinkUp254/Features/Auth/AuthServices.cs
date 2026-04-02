@@ -273,6 +273,10 @@ namespace LinkUp254.Features.Auth
         //        return AuthResult.Failure("Failed to send OTP.");
         //    }
         //}
+
+
+
+
         //  OTP LOGIN - REQUEST
         public async Task<AuthResult> RequestOtpLoginAsync(OtpLoginRequestDto dto)
         {
@@ -285,23 +289,37 @@ namespace LinkUp254.Features.Auth
                 if (!user.IsActive)
                     return AuthResult.Failure("Account not activated.");
 
-                // ✅ VALIDATE: If phone delivery requested, check phone belongs to this email
+                
                 if (dto.OtpDeliveryMethod?.ToLower() == "phone")
                 {
+                    // Check if user has a phone number in database
                     if (string.IsNullOrEmpty(user.PhoneNumber))
                         return AuthResult.Failure("No phone number linked to this account.");
 
-                    // ✅ Use the phone from database (not user input) to ensure it's linked
-                    // This prevents someone from entering a random phone with someone else's email
+                    
+                    if (!string.IsNullOrEmpty(dto.Phone))
+                    {
+                        // Normalize both numbers for comparison 
+                        var inputPhone = dto.Phone.Replace(" ", "").Replace("-", "").Replace("+", "");
+                        var dbPhone = user.PhoneNumber.Replace(" ", "").Replace("-", "").Replace("+", "");
+
+                        if (inputPhone != dbPhone)
+                        {
+                            _logger.LogWarning("Phone mismatch: Input={InputPhone}, Database={DbPhone} for Email={Email}",
+                                dto.Phone, user.PhoneNumber, dto.Email);
+                            return AuthResult.Failure("This phone number is not linked to the provided email address.");
+                        }
+                    }
                 }
 
+                //  Using the phone from DATABASE (not user input) to ensure security
                 var identifier = dto.OtpDeliveryMethod?.ToLower() == "email" ? dto.Email : user.PhoneNumber;
                 if (string.IsNullOrEmpty(identifier))
                     return AuthResult.Failure($"{dto.OtpDeliveryMethod} not available for this account.");
 
                 var otpCode = await GenerateAndSaveOtpAsync(identifier, "Login");
 
-                // Send OTP with error handling
+                // Sending OTP with error handling
                 try
                 {
                     await SendOtpToIdentifierAsync(identifier, otpCode, dto.OtpDeliveryMethod ?? "Email");
