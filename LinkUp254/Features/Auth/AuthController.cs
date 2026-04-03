@@ -1,7 +1,8 @@
-﻿using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using LinkUp254.Features.Auth.DTOs;
+﻿using LinkUp254.Features.Auth.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace LinkUp254.Features.Auth
 {
@@ -103,6 +104,20 @@ namespace LinkUp254.Features.Auth
             if (!ModelState.IsValid) return BadRequest(new { IsSuccess = false, Message = "Validation failed", Errors = ModelState });
             var result = await _authServices.RefreshTokenAsync(dto);
             return result.IsSuccess ? Ok(result) : BadRequest(result);
+        }
+
+
+
+        [HttpGet("profile-completeness")]
+        [Authorize]
+        public async Task<IActionResult> GetProfileCompleteness()
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email))
+                return Unauthorized(new { message = "Invalid token" });
+
+            var result = await _authServices.GetProfileCompletenessAsync(email);
+            return Ok(result);
         }
     }
 }
