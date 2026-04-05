@@ -30,6 +30,8 @@ builder.Services.AddScoped<AuthServices>();
 builder.Services.AddScoped<AdminAuthServices>();
 builder.Services.AddScoped<LinkUp254.Features.Events.EventServices>();
 
+builder.Services.AddScoped<LinkUp254.Features.Groups.GroupServices>();
+
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);
 

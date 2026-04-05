@@ -34,8 +34,8 @@
 
   <ItemGroup>
     <Folder Include="Features\Event\DTOs\" />
-    <Folder Include="Features\Group\DTOs\" />
-    <Folder Include="Features\Group\Messages\DTOs\" />
+    <Folder Include="Features\Groups\DTOs\" />
+    <Folder Include="Features\Groups\Messages\DTOs\" />
   </ItemGroup>
 
 </Project>

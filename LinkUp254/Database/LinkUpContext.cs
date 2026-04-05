@@ -16,16 +16,21 @@ namespace LinkUp254.Database
         public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
         public DbSet<OtpCodes> OtpCodes { get; set; } = null!;
 
-        //  fully-qualified name for Shared.
+        //  name for Shared.
         public DbSet<LinkUp254.Features.Shared.UserInterest> UserInterests { get; set; } = null!;
         public DbSet<Interest> Interests { get; set; } = null!;
         public DbSet<EventInterest> EventInterests { get; set; } = null!;
+
+        //  Groups feature DbSets
+        public DbSet<LinkUp254.Features.Groups.Models.Group> Groups { get; set; } = null!;
+        public DbSet<LinkUp254.Features.Groups.Models.GroupMember> GroupMembers { get; set; } = null!;
+        public DbSet<LinkUp254.Features.Groups.Models.GroupEvent> GroupEvents { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            //  EVENT ATTENDEE 
+            // EVENT ATTENDEE 
             modelBuilder.Entity<EventAttendee>()
                 .HasKey(ea => new { ea.EventId, ea.UserId });
             modelBuilder.Entity<EventAttendee>()
@@ -33,7 +38,7 @@ namespace LinkUp254.Database
             modelBuilder.Entity<EventAttendee>()
                 .HasOne(ea => ea.User).WithMany(u => u.EventAttendees).HasForeignKey(ea => ea.UserId).OnDelete(DeleteBehavior.Cascade);
 
-            // EVENT INTEREST (Bridge Table) 
+            //  EVENT INTEREST
             modelBuilder.Entity<EventInterest>(entity =>
             {
                 entity.HasKey(ei => new { ei.EventId, ei.InterestId });
@@ -42,7 +47,7 @@ namespace LinkUp254.Database
                 entity.Property(ei => ei.Weight).HasDefaultValue(1f);
             });
 
-            // EVENT CONFIGURATION 
+            //  EVENT CONFIGURATION 
             modelBuilder.Entity<Event>(entity =>
             {
                 entity.HasIndex(e => e.OrganizerId);
@@ -64,7 +69,7 @@ namespace LinkUp254.Database
                 entity.HasOne(e => e.Organizer)
                     .WithMany()
                     .HasForeignKey(e => e.OrganizerId)
-                    .OnDelete(DeleteBehavior.NoAction);  
+                    .OnDelete(DeleteBehavior.NoAction);
 
                 entity.Property(e => e.Title).HasMaxLength(200);
                 entity.Property(e => e.Description).HasMaxLength(2000);
@@ -77,7 +82,7 @@ namespace LinkUp254.Database
             //  TICKET 
             modelBuilder.Entity<Ticket>().Property(t => t.Price).HasPrecision(18, 2);
 
-            //  USER 
+            // USER 
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasIndex(u => u.Email).IsUnique();
@@ -122,9 +127,69 @@ namespace LinkUp254.Database
                 entity.Property(e => e.IsActive).HasDefaultValue(true);
                 entity.Property(e => e.SelectedAt).HasDefaultValueSql("GETUTCDATE()");
             });
+
+
+            // Group entity configuration
+            modelBuilder.Entity<LinkUp254.Features.Groups.Models.Group>(entity =>
+            {
+                entity.HasIndex(g => g.OrganizerId);
+                entity.HasIndex(g => g.City);
+                entity.HasIndex(g => g.Country);
+                entity.HasIndex(g => g.IsActive);
+
+                entity.Property(g => g.Name).IsRequired().HasMaxLength(200);
+                entity.Property(g => g.Description).HasMaxLength(1000);
+                entity.Property(g => g.CoverImage).HasMaxLength(500);
+                entity.Property(g => g.City).HasMaxLength(100);
+                entity.Property(g => g.Country).HasMaxLength(100);
+                entity.Property(g => g.IsActive).HasDefaultValue(true);
+                entity.Property(g => g.MemberCount).HasDefaultValue(0);
+
+                entity.HasOne(g => g.Organizer)
+                    .WithMany()
+                    .HasForeignKey(g => g.OrganizerId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            // GroupMember entity configuration
+            modelBuilder.Entity<LinkUp254.Features.Groups.Models.GroupMember>(entity =>
+            {
+                entity.HasIndex(gm => new { gm.GroupId, gm.UserId }).IsUnique();
+                entity.HasIndex(gm => gm.UserId);
+                entity.HasIndex(gm => gm.IsActive);
+
+                entity.Property(gm => gm.Role).HasMaxLength(50).HasDefaultValue("member");
+                entity.Property(gm => gm.IsActive).HasDefaultValue(true);
+
+                entity.HasOne(gm => gm.Group)
+                    .WithMany(g => g.GroupMembers)
+                    .HasForeignKey(gm => gm.GroupId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(gm => gm.User)
+                    .WithMany()
+                    .HasForeignKey(gm => gm.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // GroupEvent entity configuration
+            modelBuilder.Entity<LinkUp254.Features.Groups.Models.GroupEvent>(entity =>
+            {
+                entity.HasIndex(ge => new { ge.GroupId, ge.EventId }).IsUnique();
+
+                entity.HasOne(ge => ge.Group)
+                    .WithMany(g => g.GroupEvents)
+                    .HasForeignKey(ge => ge.GroupId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ge => ge.Event)
+                    .WithMany()
+                    .HasForeignKey(ge => ge.EventId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
         }
 
-        //  AUTO TIMESTAMPING
+        //  AUTO TIMESTAMPING 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             var entries = ChangeTracker.Entries()

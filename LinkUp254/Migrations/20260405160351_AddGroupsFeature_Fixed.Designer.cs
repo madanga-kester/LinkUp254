@@ -4,6 +4,7 @@ using LinkUp254.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LinkUp254.Migrations
 {
     [DbContext(typeof(LinkUpContext))]
-    partial class LinkUpContextModelSnapshot : ModelSnapshot
+    [Migration("20260405160351_AddGroupsFeature_Fixed")]
+    partial class AddGroupsFeature_Fixed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
