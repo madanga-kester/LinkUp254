@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using LinkUp254.Features.Interests.DTOs;
-using LinkUp254.Features.Shared;
+using LinkUp254.Features.Shared;  
 using Microsoft.EntityFrameworkCore;
 using LinkUp254.Database;
 using System.Security.Claims;
@@ -23,7 +23,7 @@ namespace LinkUp254.Features.Interests
             _context = context;
         }
 
-        // GET: api/interest/all - Geting all active interests (public or auth required)
+        // GET: api/interest/all - Get all active interests (public)
         [HttpGet("all")]
         public async Task<IActionResult> GetAll()
         {
@@ -50,22 +50,22 @@ namespace LinkUp254.Features.Interests
                 if (!int.TryParse(userIdClaim, out var userId))
                     return Unauthorized(new { message = "Invalid token" });
 
-                // Remove old selections for this user
+                // Remove old selection for this user
                 var existing = await _context.UserInterests
                     .Where(ui => ui.UserId == userId)
                     .ToListAsync();
                 _context.UserInterests.RemoveRange(existing);
 
-                // Add new selections
-                var newInterests = dto.InterestIds.Select(id => new UserInterest
+                
+                var newInterests = dto.InterestIds.Select(id => new LinkUp254.Features.Shared.UserInterest
                 {
                     UserId = userId,
                     InterestId = id,
                     SelectedAt = DateTime.UtcNow,
                     IsActive = true
                 });
-                await _context.UserInterests.AddRangeAsync(newInterests);
 
+                await _context.UserInterests.AddRangeAsync(newInterests);
                 await _context.SaveChangesAsync();
 
                 return Ok(new { message = "Interests saved successfully", count = dto.InterestIds.Count });
@@ -76,7 +76,7 @@ namespace LinkUp254.Features.Interests
             }
         }
 
-        // GET: api/interest/my - Get current user's selected interests
+        // GET: api/interest/my -Get current user's selected interests
         [HttpGet("my")]
         [Authorize]
         public async Task<IActionResult> GetMyInterests()
@@ -95,12 +95,7 @@ namespace LinkUp254.Features.Interests
             return Ok(interests);
         }
 
-
-
-
-
-
-        // GET: api/interest/has-interests - Check if user has selected interests
+        // GET: api/interest/has-interests -Check if user has selected interests
         [HttpGet("has-interests")]
         [Authorize]
         public async Task<IActionResult> HasInterests()
@@ -116,14 +111,5 @@ namespace LinkUp254.Features.Interests
 
             return Ok(new { hasInterests });
         }
-
-
-
-
-
-
-
-
-
     }
 }

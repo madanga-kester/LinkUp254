@@ -28,10 +28,12 @@ namespace LinkUp254.Features.Shared
         public string? Website { get; set; }
 
 
-       
-        
+
+
 
         // Navigations
+        
+        public ICollection<Event> HostedEvents { get; set; } = new List<Event>();
         public ICollection<Event> EventsHosted { get; set; } = new List<Event>();
         public ICollection<EventAttendee> EventAttendees { get; set; } = new List<EventAttendee>();
         public ICollection<ChatMessage> SentMessages { get; set; } = new List<ChatMessage>();

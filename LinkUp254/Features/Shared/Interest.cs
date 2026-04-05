@@ -20,6 +20,8 @@ namespace LinkUp254.Features.Shared
         public new bool IsActive { get; set; } = true;
 
         public ICollection<UserInterest> UserInterests { get; set; } = new List<UserInterest>();
+        
+        public ICollection<LinkUp254.Features.Events.models.EventInterest> EventInterests { get; set; } = new List<LinkUp254.Features.Events.models.EventInterest>();
 
         public Interest() { }
 

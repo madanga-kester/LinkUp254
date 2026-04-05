@@ -28,6 +28,7 @@ builder.Services.AddDbContext<LinkUpContext>(options =>
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<AuthServices>();
 builder.Services.AddScoped<AdminAuthServices>();
+builder.Services.AddScoped<LinkUp254.Features.Events.EventServices>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);

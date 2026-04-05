@@ -1,39 +1,26 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace LinkUp254.Features.Shared
+namespace LinkUp254.Features.Shared;
+
+public class UserInterest
 {
-  
-    [Index(nameof(UserId), nameof(InterestId), IsUnique = true)]
-    public class UserInterest : BaseEntity
-    {
-        [Required]
-        public int UserId { get; set; }
+    [Key]
+    [Column(Order = 1)]
+    public int UserId { get; set; }
 
-        [ForeignKey("UserId")]
-        public User User { get; set; } = null!;
+    [Key]
+    [Column(Order = 2)]
+    public int InterestId { get; set; }
 
-        [Required]
-        public int InterestId { get; set; }
+    public User User { get; set; } = null!;
+    public Interest Interest { get; set; } = null!;
 
-        [ForeignKey("InterestId")]
-        public Interest Interest { get; set; } = null!;
+    public bool IsActive { get; set; } = true;
 
-        public DateTime SelectedAt { get; set; } = DateTime.UtcNow;
+   
+    public DateTime SelectedAt { get; set; } = DateTime.UtcNow;
 
-       
-        public new bool IsActive { get; set; } = true;
 
-     
-
-        public UserInterest() { }
-
-        public UserInterest(int userId, int interestId) : base()
-        {
-            UserId = userId;
-            InterestId = interestId;
-            SelectedAt = DateTime.UtcNow;
-        }
-    }
 }

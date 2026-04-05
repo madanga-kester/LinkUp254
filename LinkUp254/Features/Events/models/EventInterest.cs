@@ -1,26 +1,14 @@
-﻿using LinkUp254.Features.Shared;
+﻿using LinkUp254.Features.Shared; 
 
-using System.ComponentModel.DataAnnotations.Schema;
+namespace LinkUp254.Features.Events.models;
 
-namespace LinkUp254.Features.Events.models
+public class EventInterest
 {
-    public class EventInterest : BaseEntity
-    {
-        public int EventId { get; set; }
-        public int InterestId { get; set; }
+    public int EventId { get; set; }
+    public Event Event { get; set; } = null!;
 
-        [ForeignKey("EventId")]
-        public Event Event { get; set; } = null!;
+    public int InterestId { get; set; }
+    public Interest Interest { get; set; } = null!;  
 
-        [ForeignKey("InterestId")]
-        public Interest Interest { get; set; } = null!;
-
-        public EventInterest() { }
-
-        public EventInterest(int eventId, int interestId) : base()
-        {
-            EventId = eventId;
-            InterestId = interestId;
-        }
-    }
+    public float Weight { get; set; } = 1f;
 }

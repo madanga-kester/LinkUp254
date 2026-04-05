@@ -1,29 +1,39 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace LinkUp254.Features.Events.DTOs
+namespace LinkUp254.Features.Events.DTOs;
+
+public class EventFilterDto
 {
-    public class EventFilterDto
-    {
-        
-        public string? Interests { get; set; }
+    // Location filters
+    [StringLength(100)]
+    public string? City { get; set; }
 
-        // location 
-        public string? City { get; set; }
-        public string? Country { get; set; }
+    [StringLength(100)]
+    public string? Country { get; set; }
 
-        //  date range
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
+    [StringLength(500)]
+    public string? Location { get; set; }  // Venue name/address
 
-        // Pagination
-        [Range(1, 100)]
-        public int Limit { get; set; } = 20;
+    // Date range (filters on StartTime)
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
 
-        [Range(0, int.MaxValue)]
-        public int Offset { get; set; } = 0;
+    // Price filters
+    public bool? IsFreeOnly { get; set; }  // Show only free events
+    public decimal? MinPrice { get; set; }
+    public decimal? MaxPrice { get; set; }
 
-        // Sort 
-        [RegularExpression("^(date_asc|date_desc|popularity|relevance)$")]
-        public string SortBy { get; set; } = "relevance";
-    }
+    // Interest filtering 
+    public string? InterestIds { get; set; }
+
+    // Pagination
+    [Range(1, 100)]
+    public int Limit { get; set; } = 20;
+
+    [Range(0, int.MaxValue)]
+    public int Offset { get; set; } = 0;
+
+    // Sort options
+    [RegularExpression("^(date_asc|date_desc|popularity|price_asc|price_desc|relevance)$")]
+    public string SortBy { get; set; } = "relevance";
 }
