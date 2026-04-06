@@ -17,6 +17,8 @@ public class EventServices
     private readonly LinkUpContext _context;
     private readonly ILogger<EventServices> _logger;
 
+    public string? CoverImage { get; private set; }
+
     public EventServices(LinkUpContext context, ILogger<EventServices> logger)
     {
         _context = context;
@@ -28,9 +30,23 @@ public class EventServices
     {
         try
         {
+            // FIX: Removed hardcoded future-only filter so ALL published events show
             var query = _context.Events
-                .Where(e => e.IsActive && e.IsPublished && e.StartTime >= DateTime.UtcNow.Date)
+                .Where(e => e.IsActive && e.IsPublished)
                 .AsQueryable();
+
+            // Search by title, description, location, city, country
+            if (!string.IsNullOrEmpty(filters.Search))
+            {
+                var searchTerm = $"%{filters.Search}%";
+                query = query.Where(e =>
+                    EF.Functions.Like(e.Title, searchTerm) ||
+                    EF.Functions.Like(e.Description, searchTerm) ||
+                    EF.Functions.Like(e.Location, searchTerm) ||
+                    EF.Functions.Like(e.City, searchTerm) ||
+                    EF.Functions.Like(e.Country, searchTerm)
+                );
+            }
 
             // Filter by location
             if (!string.IsNullOrEmpty(filters.City))
@@ -40,7 +56,7 @@ public class EventServices
             if (!string.IsNullOrEmpty(filters.Location))
                 query = query.Where(e => EF.Functions.Like(e.Location, $"%{filters.Location}%"));
 
-            // Filter by date range
+            // Filter by date range (only if user explicitly provides dates)
             if (filters.StartDate.HasValue)
                 query = query.Where(e => e.StartTime >= filters.StartDate.Value);
             if (filters.EndDate.HasValue)
@@ -112,7 +128,7 @@ public class EventServices
                     e.EventInterests.Any(ei => userInterestIds.Contains(ei.InterestId))
                 );
 
-                //  relevance boost score for interest matches
+                // Relevance boost score for interest matches
                 query = query.OrderByDescending(e =>
                     e.EventInterests.Count(ei => userInterestIds.Contains(ei.InterestId))
                 );
@@ -254,7 +270,7 @@ public class EventServices
         }
     }
 
-    // POST: Create new event
+    // POST: Create a new event
     public async Task<AuthResult> CreateEventAsync(CreateEventDto dto, int organizerId)
     {
         try
@@ -265,6 +281,7 @@ public class EventServices
 
             var newEvent = new Event(
                 title: dto.Title,
+               
                 description: dto.Description ?? "",
                 city: dto.City ?? "",
                 country: dto.Country ?? "",
@@ -309,7 +326,7 @@ public class EventServices
         }
     }
 
-    // PUT: Update event 
+    // PUT: Update event
     public async Task<AuthResult> UpdateEventAsync(int eventId, UpdateEventDto dto, int organizerId)
     {
         try
@@ -365,7 +382,7 @@ public class EventServices
         }
     }
 
-    // DELETE: Soft delete event
+    // DELETE: Soft deleting an event
     public async Task<AuthResult> DeleteEventAsync(int eventId, int organizerId)
     {
         try
@@ -376,7 +393,7 @@ public class EventServices
             if (existingEvent == null)
                 return AuthResult.Failure("Event not found or you don't have permission to delete it.");
 
-            // Soft delete: just mark as inactive
+            // Soft delete: just marking  as inactive
             existingEvent.IsActive = false;
             existingEvent.UpdatedAt = DateTime.UtcNow;
 

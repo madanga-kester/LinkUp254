@@ -70,7 +70,7 @@ public class Event : BaseEntity
     public Event() { }
 
     public Event(string title, string description, string city, string country, string location,
-                 DateTime startTime, DateTime endTime, int organizerId)
+                 DateTime startTime, DateTime endTime, int organizerId, string? CoverImage)
     {
         Title = title;
         Description = description;
@@ -80,6 +80,7 @@ public class Event : BaseEntity
         StartTime = startTime;
         EndTime = endTime;
         OrganizerId = organizerId;
+        this.CoverImage = CoverImage;
         IsActive = true;
         IsPublished = false;
         IsPublished = true;  

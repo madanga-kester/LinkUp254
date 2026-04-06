@@ -30,10 +30,15 @@ public class EventFilterDto
     [Range(1, 100)]
     public int Limit { get; set; } = 20;
 
+    
+
     [Range(0, int.MaxValue)]
     public int Offset { get; set; } = 0;
+    public string? Search { get; set; }
 
     // Sort options
     [RegularExpression("^(date_asc|date_desc|popularity|price_asc|price_desc|relevance)$")]
     public string SortBy { get; set; } = "relevance";
+
+
 }
