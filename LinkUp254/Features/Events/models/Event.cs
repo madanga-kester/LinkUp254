@@ -87,4 +87,16 @@ public class Event : BaseEntity
 
         CreatedAt = DateTime.UtcNow;
     }
+
+    public Event(string title, string description, string city, string country, string location, DateTime startTime, DateTime endTime, int organizerId)
+    {
+        Title = title;
+        Description = description;
+        City = city;
+        Country = country;
+        Location = location;
+        StartTime = startTime;
+        EndTime = endTime;
+        OrganizerId = organizerId;
+    }
 } 

@@ -23,7 +23,7 @@ namespace LinkUp254.Features.Events.models
         public int TicketId { get; set; }
 
         
-        public string BuyerId { get; set; }
+        public string? BuyerId { get; set; }
         public string? PaymentId { get; set; } 
 
         public bool CheckedIn { get; set; } = false;

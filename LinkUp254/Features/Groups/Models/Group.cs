@@ -37,4 +37,10 @@ public class Group
     // Navigation properties
     public ICollection<GroupMember> GroupMembers { get; set; } = new List<GroupMember>();
     public ICollection<GroupEvent> GroupEvents { get; set; } = new List<GroupEvent>();
+
+    
+    public GroupSettings? Settings { get; set; }
+    public ICollection<GroupRule> GroupRules { get; set; } = new List<GroupRule>();
+    public GroupChat? Chat { get; set; }
+    public ICollection<GroupJoinRequest> JoinRequests { get; set; } = new List<GroupJoinRequest>();
 }

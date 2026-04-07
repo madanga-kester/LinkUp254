@@ -1,6 +1,9 @@
-﻿using LinkUp254.Features.Groups.Models;
+﻿using LinkUp254.Features.Groups.DTOs;
+using LinkUp254.Features.Groups.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 
 namespace LinkUp254.Features.Groups;
@@ -114,4 +117,198 @@ public class GroupController : ControllerBase
             ? Ok(new { isSuccess = true, message = "Group deleted successfully" })
             : BadRequest(new { message = "Could not delete group (only organizer can delete)" });
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // GROUP CHAT 
+    // POST: api/groups/{id}/chat/send - Send a message
+    [HttpPost("{id:int}/chat/send")]
+    [Authorize]
+    public async Task<IActionResult> SendMessage(int id, [FromBody] SendMessageDto dto)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _groupServices.SendMessageAsync(id, intUserId, dto.Content);
+        return result.IsSuccess ? Ok(result) : BadRequest(result);
+    }
+
+    // GET: api/groups/{id}/chat/messages - Get recent messages
+    [HttpGet("{id:int}/chat/messages")]
+    [Authorize]
+    public async Task<IActionResult> GetMessages(int id, [FromQuery] int limit = 50)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var messages = await _groupServices.GetGroupMessagesAsync(id, intUserId, limit);
+        return Ok(messages);
+    }
+
+    //  GROUP SETTINGS 
+
+    // PUT: api/groups/{id}/settings - Update group settings
+    [HttpPut("{id:int}/settings")]
+    [Authorize]
+    public async Task<IActionResult> UpdateSettings(int id, [FromBody] UpdateGroupSettingsDto dto)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _groupServices.UpdateSettingsAsync(id, intUserId, dto);
+        return result.IsSuccess ? Ok(result) : BadRequest(result);
+    }
+
+    // GET: api/groups/{id}/settings - Get current settings
+   
+    [HttpGet("{id:int}/settings")]
+    [Authorize]
+    public async Task<IActionResult> GetSettings(int id)
+    {
+        
+        var settings = await _groupServices.GetSettingsAsync(id);
+        return settings != null ? Ok(settings) : NotFound(new { message = "Settings not found" });
+    }
+
+    //  GROUP RULES
+
+    // POST: api/groups/{id}/rules - Addi a new rule
+    [HttpPost("{id:int}/rules")]
+    [Authorize]
+    public async Task<IActionResult> AddRule(int id, [FromBody] CreateGroupRuleDto dto)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _groupServices.AddRuleAsync(id, intUserId, dto);
+        return result.IsSuccess ? Ok(result) : BadRequest(result);
+    }
+
+    // GET: api/groups/{id}/rules - Get all rules
+    [HttpGet("{id:int}/rules")]
+    public async Task<IActionResult> GetRules(int id)
+    {
+        var rules = await _groupServices.GetGroupRulesAsync(id);
+        return Ok(rules);
+    }
+
+    //  MEMBER REQUESTS
+
+    // POST: api/groups/{id}/join-request - Request to join (or auto-join if public)
+    [HttpPost("{id:int}/join-request")]
+    [Authorize]
+    public async Task<IActionResult> RequestJoin(int id, [FromBody] JoinRequestDto dto)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _groupServices.RequestJoinAsync(id, intUserId, dto.Message);
+        return result.IsSuccess ? Ok(result) : BadRequest(result);
+    }
+
+    // GET: api/groups/{id}/join-requests/pending - Get pending requests (organizer only)
+    [HttpGet("{id:int}/join-requests/pending")]
+    [Authorize]
+    public async Task<IActionResult> GetPendingRequests(int id)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var requests = await _groupServices.GetPendingJoinRequestsAsync(id, intUserId);
+        return Ok(requests);
+    }
+
+    // PUT: api/groups/join-requests/{requestId}/review - Review a join request
+    [HttpPut("join-requests/{requestId:int}/review")]
+    [Authorize]
+    public async Task<IActionResult> ReviewRequest(int requestId, [FromBody] ReviewJoinRequestDto dto)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _groupServices.ReviewJoinRequestAsync(requestId, intUserId, dto.Approve, dto.Notes);
+        return result.IsSuccess ? Ok(result) : BadRequest(result);
+    }
+
+    // MEMBER MANAGEMENT
+
+    // DELETE: api/groups/{id}/members/{userId} - Removeing a member
+    [HttpDelete("{id:int}/members/{userId:int}")]
+    [Authorize]
+    public async Task<IActionResult> RemoveMember(int id, int userId)
+    {
+        var organizerId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                       ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(organizerId) || !int.TryParse(organizerId, out var intOrganizerId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _groupServices.RemoveMemberAsync(id, intOrganizerId, userId);
+        return result.IsSuccess ? Ok(result) : BadRequest(result);
+    }
+
+    // PUT: api/groups/{id}/members/{userId}/role - Update member role
+    [HttpPut("{id:int}/members/{userId:int}/role")]
+    [Authorize]
+    public async Task<IActionResult> UpdateMemberRole(int id, int userId, [FromBody] UpdateRoleDto dto)
+    {
+        var organizerId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                       ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(organizerId) || !int.TryParse(organizerId, out var intOrganizerId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _groupServices.UpdateMemberRoleAsync(id, intOrganizerId, userId, dto.NewRole);
+        return result.IsSuccess ? Ok(result) : BadRequest(result);
+    }
+}
+
+public class JoinRequestDto
+{
+    public string? Message { get; set; }
+}
+
+public class UpdateRoleDto
+{
+    [Required]
+    public string NewRole { get; set; } = string.Empty;
 }
