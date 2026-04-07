@@ -27,12 +27,35 @@ public class GroupController : ControllerBase
         return Ok(groups);
     }
 
-    // GET: api/groups/{id} - Single group details
+    // GET: api/groups/{id} - Single group details WITH SETTINGS INCLUDED
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetGroupById(int id)
     {
         var group = await _groupServices.GetGroupByIdAsync(id);
-        return group != null ? Ok(group) : NotFound(new { message = "Group not found" });
+        if (group == null) return NotFound(new { message = "Group not found" });
+
+        // Return shaped response with isPrivate flag and settings object
+        var response = new
+        {
+            group.Id,
+            group.Name,
+            group.Description,
+            group.CoverImage,
+            group.OrganizerId,
+            group.City,
+            group.Country,
+            group.MemberCount,
+            group.IsActive,
+            // ✅ CRITICAL: Include isPrivate flag for frontend join logic
+            IsPrivate = group.Settings?.IsPrivate ?? false,
+            group.CreatedAt,
+            group.GroupMembers,
+            group.GroupEvents,
+            // ✅ Include full settings object for display
+            Settings = group.Settings
+        };
+
+        return Ok(response);
     }
 
     // GET: api/groups/my-groups - Groups user belongs to
@@ -49,21 +72,6 @@ public class GroupController : ControllerBase
         var groups = await _groupServices.GetUserGroupsAsync(id);
         return Ok(groups);
     }
-
-    //// POST: api/groups - Create new group
-    //[HttpPost]
-    //[Authorize]
-    //public async Task<IActionResult> CreateGroup([FromBody] CreateGroupDto dto)
-    //{
-    //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-    //              ?? User.FindFirst("sub")?.Value;
-
-    //    if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var id))
-    //        return Unauthorized(new { message = "Authentication required" });
-
-    //    var group = await _groupServices.CreateGroupAsync(dto, id);
-    //    return Ok(new { isSuccess = true, message = "Group created successfully", group });
-    //}
 
     // POST: api/groups - Create new group
     [HttpPost]
@@ -86,12 +94,7 @@ public class GroupController : ControllerBase
         });
     }
 
-
-
-
-
-
-    // POST: api/groups/{id}/join - Join a group
+    // POST: api/groups/{id}/join - Join a group (PUBLIC GROUPS ONLY)
     [HttpPost("{id:int}/join")]
     [Authorize]
     public async Task<IActionResult> JoinGroup(int id)
@@ -101,6 +104,13 @@ public class GroupController : ControllerBase
 
         if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
             return Unauthorized(new { message = "Authentication required" });
+
+        // Check if group is private - if so, reject auto-join
+        var group = await _groupServices.GetGroupByIdAsync(id);
+        if (group?.Settings?.IsPrivate == true)
+        {
+            return BadRequest(new { message = "This is a private group. Please send a join request instead." });
+        }
 
         var result = await _groupServices.JoinGroupAsync(id, intUserId);
         return Ok(new
@@ -144,26 +154,6 @@ public class GroupController : ControllerBase
             : BadRequest(new { message = "Could not delete group (only organizer can delete)" });
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     // GROUP CHAT 
     // POST: api/groups/{id}/chat/send - Send a message
     [HttpPost("{id:int}/chat/send")]
@@ -195,8 +185,7 @@ public class GroupController : ControllerBase
         return Ok(messages);
     }
 
-    //  GROUP SETTINGS 
-
+    // GROUP SETTINGS 
     // PUT: api/groups/{id}/settings - Update group settings
     [HttpPut("{id:int}/settings")]
     [Authorize]
@@ -213,19 +202,16 @@ public class GroupController : ControllerBase
     }
 
     // GET: api/groups/{id}/settings - Get current settings
-   
     [HttpGet("{id:int}/settings")]
     [Authorize]
     public async Task<IActionResult> GetSettings(int id)
     {
-        
         var settings = await _groupServices.GetSettingsAsync(id);
         return settings != null ? Ok(settings) : NotFound(new { message = "Settings not found" });
     }
 
-    //  GROUP RULES
-
-    // POST: api/groups/{id}/rules - Addi a new rule
+    // GROUP RULES
+    // POST: api/groups/{id}/rules - Add a new rule
     [HttpPost("{id:int}/rules")]
     [Authorize]
     public async Task<IActionResult> AddRule(int id, [FromBody] CreateGroupRuleDto dto)
@@ -248,9 +234,8 @@ public class GroupController : ControllerBase
         return Ok(rules);
     }
 
-    //  MEMBER REQUESTS
-
-    // POST: api/groups/{id}/join-request - Request to join (or auto-join if public)
+    // MEMBER REQUESTS
+    // POST: api/groups/{id}/join-request - Request to join (for PRIVATE groups)
     [HttpPost("{id:int}/join-request")]
     [Authorize]
     public async Task<IActionResult> RequestJoin(int id, [FromBody] JoinRequestDto dto)
@@ -296,8 +281,7 @@ public class GroupController : ControllerBase
     }
 
     // MEMBER MANAGEMENT
-
-    // DELETE: api/groups/{id}/members/{userId} - Removeing a member
+    // DELETE: api/groups/{id}/members/{userId} - Remove a member
     [HttpDelete("{id:int}/members/{userId:int}")]
     [Authorize]
     public async Task<IActionResult> RemoveMember(int id, int userId)
@@ -325,13 +309,7 @@ public class GroupController : ControllerBase
 
         var result = await _groupServices.UpdateMemberRoleAsync(id, intOrganizerId, userId, dto.NewRole);
         return result.IsSuccess ? Ok(result) : BadRequest(result);
-  
-    
     }
-
-
-
-
 
     // GET: api/groups/{id}/activity
     [HttpGet("{id:int}/activity")]
@@ -390,18 +368,17 @@ public class GroupController : ControllerBase
 
 
 
-
-
-
-
-
-
-
-
-
+    // GET: api/groups/{id}/members - Get all active members
+    [HttpGet("{id:int}/members")]
+    public async Task<IActionResult> GetGroupMembers(int id)
+    {
+        var members = await _groupServices.GetGroupMembersAsync(id);
+        return Ok(members);
+    }
 
 }
 
+// DTOs (keep these at bottom of file or move to separate DTO file)
 public class JoinRequestDto
 {
     public string? Message { get; set; }

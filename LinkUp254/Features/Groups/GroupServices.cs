@@ -633,6 +633,34 @@ public class GroupServices
         await _context.SaveChangesAsync();
         return AuthResult.Success("Member added");
     }
+
+
+
+    // GET: Members of a group
+    public async Task<List<GroupMemberResponseDto>> GetGroupMembersAsync(int groupId)
+    {
+        var members = await _context.GroupMembers
+            .Where(gm => gm.GroupId == groupId && gm.IsActive)
+            .Include(gm => gm.User)
+            .Select(gm => new GroupMemberResponseDto
+            {
+                Id = gm.Id,
+                UserId = gm.UserId,
+                Role = gm.Role,
+                JoinedAt = gm.JoinedAt,
+                User = new UserDto
+                {
+                    Id = gm.User.Id,
+                    FirstName = gm.User.FirstName,
+                    LastName = gm.User.LastName,
+                    ProfilePicture = gm.User.ProfilePicture
+                }
+            })
+            .OrderByDescending(gm => gm.JoinedAt)
+            .ToListAsync();
+
+        return members;
+    }
 }
 
 //  DTO Classes 
@@ -663,13 +691,29 @@ public class GalleryItemDto
     public DateTime UploadedAt { get; set; }
 }
 
+//public class UserDto
+//{
+//    public string FirstName { get; set; } = string.Empty;
+//    public string LastName { get; set; } = string.Empty;
+//}
 public class UserDto
 {
+    public int Id { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+    public string? ProfilePicture { get; set; }
 }
-
 public class AddMemberDto
 {
     public int TargetUserId { get; set; }
+}
+
+
+public class GroupMemberResponseDto
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public string Role { get; set; } = string.Empty;
+    public DateTime JoinedAt { get; set; }
+    public UserDto User { get; set; } = new UserDto();
 }
