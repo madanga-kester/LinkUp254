@@ -19,22 +19,24 @@ public class GroupController : ControllerBase
         _groupServices = groupServices;
     }
 
-    // GET: api/groups - All active groups
+    // GET: api/groups  All active groups 
     [HttpGet]
     public async Task<IActionResult> GetAllGroups([FromQuery] string? city, [FromQuery] string? country)
     {
         var groups = await _groupServices.GetAllGroupsAsync(city, country);
+
+    
         return Ok(groups);
     }
 
-    // GET: api/groups/{id} - Single group details WITH SETTINGS INCLUDED
+    // GET: api/groups/{id} - Single group details 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetGroupById(int id)
     {
         var group = await _groupServices.GetGroupByIdAsync(id);
         if (group == null) return NotFound(new { message = "Group not found" });
 
-        // Return shaped response with isPrivate flag and settings object
+        
         var response = new
         {
             group.Id,
@@ -42,17 +44,19 @@ public class GroupController : ControllerBase
             group.Description,
             group.CoverImage,
             group.OrganizerId,
+            group.Organizer,
             group.City,
             group.Country,
             group.MemberCount,
             group.IsActive,
-            // ✅ CRITICAL: Include isPrivate flag for frontend join logic
-            IsPrivate = group.Settings?.IsPrivate ?? false,
+            group.IsPrivate,
             group.CreatedAt,
+            group.UpdatedAt,
             group.GroupMembers,
             group.GroupEvents,
-            // ✅ Include full settings object for display
-            Settings = group.Settings
+            group.Settings,
+            group.GroupRules,
+            group.Chat
         };
 
         return Ok(response);
@@ -94,7 +98,7 @@ public class GroupController : ControllerBase
         });
     }
 
-    // POST: api/groups/{id}/join - Join a group (PUBLIC GROUPS ONLY)
+    // POST: api/groups/{id}/join - Join a group
     [HttpPost("{id:int}/join")]
     [Authorize]
     public async Task<IActionResult> JoinGroup(int id)
@@ -104,13 +108,6 @@ public class GroupController : ControllerBase
 
         if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
             return Unauthorized(new { message = "Authentication required" });
-
-        // Check if group is private - if so, reject auto-join
-        var group = await _groupServices.GetGroupByIdAsync(id);
-        if (group?.Settings?.IsPrivate == true)
-        {
-            return BadRequest(new { message = "This is a private group. Please send a join request instead." });
-        }
 
         var result = await _groupServices.JoinGroupAsync(id, intUserId);
         return Ok(new
@@ -365,9 +362,6 @@ public class GroupController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
-
-
-
     // GET: api/groups/{id}/members - Get all active members
     [HttpGet("{id:int}/members")]
     public async Task<IActionResult> GetGroupMembers(int id)
@@ -375,10 +369,9 @@ public class GroupController : ControllerBase
         var members = await _groupServices.GetGroupMembersAsync(id);
         return Ok(members);
     }
-
 }
 
-// DTOs (keep these at bottom of file or move to separate DTO file)
+// DTOs
 public class JoinRequestDto
 {
     public string? Message { get; set; }
@@ -389,3 +382,4 @@ public class UpdateRoleDto
     [Required]
     public string NewRole { get; set; } = string.Empty;
 }
+

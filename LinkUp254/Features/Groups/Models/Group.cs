@@ -33,6 +33,9 @@ public class Group : BaseEntity
 
     public int MemberCount { get; set; }
 
+   public User? Member { get; set; }
+    public bool IsPrivate { get; set; }
+
 
 
     public ICollection<GroupMember> GroupMembers { get; set; } = new List<GroupMember>();
