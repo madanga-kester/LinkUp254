@@ -24,4 +24,8 @@ public class GroupMessage
     public bool IsDeleted { get; set; } = false;
 
     public int LikeCount { get; set; }
+
+
+    [MaxLength(500)]
+    public string? AttachmentUrl { get; set; }
 }

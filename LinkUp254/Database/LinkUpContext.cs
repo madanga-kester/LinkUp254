@@ -155,6 +155,20 @@ namespace LinkUp254.Database
                 entity.Property(g => g.IsActive).HasDefaultValue(true);
                 entity.Property(g => g.MemberCount).HasDefaultValue(0);
 
+
+                
+                entity.Property(g => g.Location).HasMaxLength(500);
+
+                
+                entity.Property(g => g.MemberCount).HasDefaultValue(0);
+
+                entity.HasOne(g => g.Organizer)
+                    .WithMany()
+                    .HasForeignKey(g => g.OrganizerId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+
+
                 entity.HasOne(g => g.Organizer)
                     .WithMany()
                     .HasForeignKey(g => g.OrganizerId)
@@ -248,6 +262,16 @@ namespace LinkUp254.Database
                     .HasForeignKey(gm => gm.GroupChatId)
                     .OnDelete(DeleteBehavior.Cascade);
 
+
+
+                entity.Property(gm => gm.AttachmentUrl).HasMaxLength(500);
+
+              
+
+               
+
+
+
                 entity.HasOne(gm => gm.Sender)
                     .WithMany()
                     .HasForeignKey(gm => gm.SenderId)
@@ -284,7 +308,7 @@ modelBuilder.Entity<LinkUp254.Features.Groups.Models.GroupRule>(entity =>
     entity.Property(gr => gr.IsActive).HasDefaultValue(true);
 
     entity.HasOne(gr => gr.Group)
-        .WithMany(g => g.GroupRules)  // Add this navigation to Group model
+        .WithMany(g => g.GroupRules)  
         .HasForeignKey(gr => gr.GroupId)
         .OnDelete(DeleteBehavior.Cascade);
 });

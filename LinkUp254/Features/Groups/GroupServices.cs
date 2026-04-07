@@ -23,7 +23,6 @@ public class GroupServices
         _context = context;
     }
 
-    // Get all active groups
     public async Task<List<GroupModel>> GetAllGroupsAsync(string? city = null, string? country = null)
     {
         var query = _context.Groups
@@ -39,7 +38,6 @@ public class GroupServices
         return await query.OrderByDescending(g => g.MemberCount).ToListAsync();
     }
 
-    // Get group by ID
     public async Task<GroupModel?> GetGroupByIdAsync(int id)
     {
         return await _context.Groups
@@ -48,20 +46,21 @@ public class GroupServices
                 .ThenInclude(gm => gm.User)
             .Include(g => g.GroupEvents)
                 .ThenInclude(ge => ge.Event)
+            .Include(g => g.Settings)
             .FirstOrDefaultAsync(g => g.Id == id && g.IsActive);
     }
 
-    // Create new group
     public async Task<GroupModel> CreateGroupAsync(CreateGroupDto dto, int organizerId)
     {
         var group = new GroupModel
         {
             Name = dto.Name.Trim(),
             Description = dto.Description?.Trim(),
-            CoverImage = dto.CoverImage,
+            CoverImage = dto.CoverImage?.Trim(),
             OrganizerId = organizerId,
             City = dto.City?.Trim(),
             Country = dto.Country?.Trim(),
+            Location = dto.Location?.Trim(),
             MemberCount = 1,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -79,12 +78,66 @@ public class GroupServices
             IsActive = true
         };
         _context.GroupMembers.Add(member);
+
+        var settings = new GroupSettings
+        {
+            GroupId = group.Id,
+            IsPrivate = dto.IsPrivate,
+            AllowMemberInvites = dto.AllowMemberInvites,
+            AllowMemberPosts = dto.AllowMemberPosts,
+            ModerateMessages = dto.ModerateMessages,
+            AllowLinks = dto.AllowLinks,
+            AllowMedia = dto.AllowMedia,
+            NotifyOnNewEvent = dto.NotifyOnNewEvent,
+            NotifyOnNewMember = dto.NotifyOnNewMember,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.GroupSettings.Add(settings);
+
+        if (dto.Rules?.Any() == true)
+        {
+            foreach (var ruleDto in dto.Rules)
+            {
+                var rule = new GroupRule
+                {
+                    GroupId = group.Id,
+                    Title = ruleDto.Title.Trim(),
+                    Description = ruleDto.Description?.Trim(),
+                    Order = 0,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.GroupRules.Add(rule);
+            }
+        }
+
+        if (dto.InterestTags?.Any() == true)
+        {
+            foreach (var tagName in dto.InterestTags)
+            {
+                var interest = await _context.Interests
+                    .FirstOrDefaultAsync(i => i.Name.ToLower() == tagName.ToLower().Trim());
+
+                if (interest == null)
+                {
+                    interest = new Interest
+                    {
+                        Name = tagName.Trim(),
+                        Category = "Custom",
+                        Icon = "tag",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Interests.Add(interest);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
         await _context.SaveChangesAsync();
 
         return group;
     }
 
-    // Join group
     public async Task<bool> JoinGroupAsync(int groupId, int userId)
     {
         var existing = await _context.GroupMembers
@@ -118,7 +171,6 @@ public class GroupServices
         return true;
     }
 
-    // Leave group
     public async Task<bool> LeaveGroupAsync(int groupId, int userId)
     {
         var member = await _context.GroupMembers
@@ -139,7 +191,6 @@ public class GroupServices
         return true;
     }
 
-    // Get user's groups
     public async Task<List<GroupModel>> GetUserGroupsAsync(int userId)
     {
         return await _context.GroupMembers
@@ -152,7 +203,6 @@ public class GroupServices
             .ToListAsync();
     }
 
-    // Delete group (organizer only)
     public async Task<bool> DeleteGroupAsync(int groupId, int userId)
     {
         var group = await _context.Groups.FindAsync(groupId);
@@ -165,18 +215,6 @@ public class GroupServices
         return true;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-    // Send a message in group chat
     public async Task<AuthResult> SendMessageAsync(int groupId, int userId, string content)
     {
         var group = await _context.Groups
@@ -186,14 +224,12 @@ public class GroupServices
         if (group == null)
             return AuthResult.Failure("Group not found.");
 
-        // Check membership
         var isMember = await _context.GroupMembers
             .AnyAsync(gm => gm.GroupId == groupId && gm.UserId == userId && gm.IsActive);
 
         if (!isMember)
             return AuthResult.Failure("You must be a member to send messages.");
 
-        // Check if member posting is allowed
         if (!group.Settings?.AllowMemberPosts ?? false)
         {
             var isOrganizer = group.OrganizerId == userId;
@@ -201,7 +237,6 @@ public class GroupServices
                 return AuthResult.Failure("Posting is disabled for members in this group.");
         }
 
-        // Get or create group chat
         var chat = await _context.GroupChats
             .FirstOrDefaultAsync(c => c.GroupId == groupId && c.IsActive);
 
@@ -212,7 +247,6 @@ public class GroupServices
             await _context.SaveChangesAsync();
         }
 
-        // Create message
         var message = new GroupMessage
         {
             GroupChatId = chat.Id,
@@ -227,10 +261,8 @@ public class GroupServices
         return AuthResult.Success("Message sent.");
     }
 
-    // Get recent messages for a group
     public async Task<List<GroupMessage>> GetGroupMessagesAsync(int groupId, int userId, int limit = 50)
     {
-        // Verify membership
         var isMember = await _context.GroupMembers
             .AnyAsync(gm => gm.GroupId == groupId && gm.UserId == userId && gm.IsActive);
 
@@ -245,18 +277,11 @@ public class GroupServices
             .ToListAsync();
     }
 
-
-
-    // GET: Group settings by ID
     public async Task<GroupSettings?> GetSettingsAsync(int groupId)
     {
         return await _context.GroupSettings.FindAsync(groupId);
     }
 
-
-    // GROUP SETTINGS 
-
-    // Update group settings (organizer only)
     public async Task<AuthResult> UpdateSettingsAsync(int groupId, int organizerId, UpdateGroupSettingsDto dto)
     {
         var group = await _context.Groups.FindAsync(groupId);
@@ -270,7 +295,6 @@ public class GroupServices
             _context.GroupSettings.Add(settings);
         }
 
-        // Update settings
         if (dto.IsPrivate.HasValue) settings.IsPrivate = dto.IsPrivate.Value;
         if (dto.AllowMemberInvites.HasValue) settings.AllowMemberInvites = dto.AllowMemberInvites.Value;
         if (dto.AllowMemberPosts.HasValue) settings.AllowMemberPosts = dto.AllowMemberPosts.Value;
@@ -286,16 +310,12 @@ public class GroupServices
         return AuthResult.Success("Settings updated.");
     }
 
-    //  GROUP RULES 
-
-    // Adding a new rule
     public async Task<AuthResult> AddRuleAsync(int groupId, int organizerId, CreateGroupRuleDto dto)
     {
         var group = await _context.Groups.FindAsync(groupId);
         if (group == null || group.OrganizerId != organizerId)
             return AuthResult.Failure("Group not found or permission denied.");
 
-        // Get max order for this group
         var maxOrder = await _context.GroupRules
             .Where(gr => gr.GroupId == groupId)
             .MaxAsync(gr => (int?)gr.Order) ?? 0;
@@ -315,7 +335,6 @@ public class GroupServices
         return AuthResult.Success("Rule added.");
     }
 
-    // Get all active rules for a group
     public async Task<List<GroupRule>> GetGroupRulesAsync(int groupId)
     {
         return await _context.GroupRules
@@ -324,9 +343,6 @@ public class GroupServices
             .ToListAsync();
     }
 
-    //  MEMBER REQUESTS
-
-    // Request to join a private group
     public async Task<AuthResult> RequestJoinAsync(int groupId, int userId, string? message)
     {
         var group = await _context.Groups
@@ -336,25 +352,21 @@ public class GroupServices
         if (group == null)
             return AuthResult.Failure("Group not found.");
 
-        // Check if already a member
         var existingMember = await _context.GroupMembers
             .AnyAsync(gm => gm.GroupId == groupId && gm.UserId == userId && gm.IsActive);
 
         if (existingMember)
             return AuthResult.Failure("You are already a member of this group.");
 
-        // Check if already has a pending request
         var existingRequest = await _context.GroupJoinRequests
             .AnyAsync(r => r.GroupId == groupId && r.UserId == userId && r.Status == "pending");
 
         if (existingRequest)
             return AuthResult.Failure("You already have a pending request to join this group.");
 
-        // If group is public, auto-approve
         if (!(group.Settings?.IsPrivate ?? false))
         {
-            // Auto-add as member
-            var member = new GroupMember
+            var member = new GroupMemberModel
             {
                 GroupId = groupId,
                 UserId = userId,
@@ -371,7 +383,6 @@ public class GroupServices
             return AuthResult.Success("Joined group successfully.");
         }
 
-        // Create join request for private group
         var request = new GroupJoinRequest
         {
             GroupId = groupId,
@@ -387,7 +398,6 @@ public class GroupServices
         return AuthResult.Success("Join request submitted. Waiting for organizer approval.");
     }
 
-    // Get pending join requests (organizers only)
     public async Task<List<GroupJoinRequest>> GetPendingJoinRequestsAsync(int groupId, int organizerId)
     {
         var group = await _context.Groups.FindAsync(groupId);
@@ -401,7 +411,6 @@ public class GroupServices
             .ToListAsync();
     }
 
-    // Review a join request (approve/reject)
     public async Task<AuthResult> ReviewJoinRequestAsync(int requestId, int organizerId, bool approve, string? notes)
     {
         var request = await _context.GroupJoinRequests
@@ -421,8 +430,7 @@ public class GroupServices
 
         if (approve)
         {
-            // Add as member
-            var member = new GroupMember
+            var member = new GroupMemberModel
             {
                 GroupId = request.GroupId,
                 UserId = request.UserId,
@@ -441,16 +449,12 @@ public class GroupServices
         return AuthResult.Success(approve ? "Member approved and added." : "Request rejected.");
     }
 
-    // MEMBER MANAGEMENT 
-
-    // Remove a member from group (organizer only)
     public async Task<AuthResult> RemoveMemberAsync(int groupId, int organizerId, int targetUserId)
     {
         var group = await _context.Groups.FindAsync(groupId);
         if (group == null || group.OrganizerId != organizerId)
             return AuthResult.Failure("Group not found or permission denied.");
 
-        // Cannot remove organizer
         if (targetUserId == organizerId)
             return AuthResult.Failure("Cannot remove the group organizer.");
 
@@ -469,7 +473,6 @@ public class GroupServices
         return AuthResult.Success("Member removed from group.");
     }
 
-    // Promote/demote member role
     public async Task<AuthResult> UpdateMemberRoleAsync(int groupId, int organizerId, int targetUserId, string newRole)
     {
         var validRoles = new[] { "member", "moderator", "admin" };
@@ -492,49 +495,181 @@ public class GroupServices
         return AuthResult.Success($"Member role updated to {newRole}.");
     }
 
+    //  Activity Feed 
+    public async Task<List<ActivityItemDto>> GetActivityFeedAsync(int groupId)
+    {
+        var activities = new List<ActivityItemDto>();
 
+        var joins = await _context.GroupMembers
+            .Where(gm => gm.GroupId == groupId && gm.IsActive)
+            .Include(gm => gm.User)
+            .OrderByDescending(gm => gm.JoinedAt)
+            .Take(10)
+            .ToListAsync();
 
+        foreach (var join in joins)
+        {
+            activities.Add(new ActivityItemDto
+            {
+                Id = join.Id,
+                Type = "join",
+                User = new UserDto { FirstName = join.User.FirstName, LastName = join.User.LastName },
+                Description = "joined the group",
+                CreatedAt = join.JoinedAt
+            });
+        }
 
+        var messages = await _context.GroupMessages
+            .Where(m => m.GroupChat.GroupId == groupId && !m.IsDeleted)
+            .Include(m => m.Sender)
+            .OrderByDescending(m => m.SentAt)
+            .Take(10)
+            .ToListAsync();
 
+        foreach (var msg in messages)
+        {
+            activities.Add(new ActivityItemDto
+            {
+                Id = msg.Id,
+                Type = "post",
+                User = new UserDto { FirstName = msg.Sender.FirstName, LastName = msg.Sender.LastName },
+                Description = "posted a message",
+                CreatedAt = msg.SentAt
+            });
+        }
 
+        return activities.OrderByDescending(a => a.CreatedAt).Take(20).ToList();
+    }
 
+    //  Discussions 
+    public async Task<List<DiscussionItemDto>> GetDiscussionsAsync(int groupId)
+    {
+        var discussions = await _context.GroupMessages
+            .Where(m => m.GroupChat.GroupId == groupId && !m.IsDeleted)
+            .GroupBy(m => m.Content.Length > 50 ? m.Content.Substring(0, 50) : m.Content)
+            .Select(g => new DiscussionItemDto
+            {
+                Id = g.Key.GetHashCode(),
+                Title = g.Key + "...",
+                Replies = g.Count(),
+                LastActivity = g.Max(m => m.SentAt),
+                Trending = g.Count() > 5
+            })
+            .OrderByDescending(d => d.Replies)
+            .Take(10)
+            .ToListAsync();
 
+        return discussions;
+    }
 
+    //  Gallery
+    public async Task<List<GalleryItemDto>> GetGalleryAsync(int groupId)
+    {
+        var gallery = await _context.GroupMessages
+            .Where(m => m.GroupChat.GroupId == groupId
+                && !m.IsDeleted
+                && m.AttachmentUrl != null)
+            .Select(m => new GalleryItemDto
+            {
+                Id = m.Id,
+                Url = m.AttachmentUrl,
+                UploadedBy = m.Sender.FirstName + " " + m.Sender.LastName,
+                UploadedAt = m.SentAt
+            })
+            .OrderByDescending(g => g.UploadedAt)
+            .Take(20)
+            .ToListAsync();
 
+        return gallery;
+    }
 
+    // Delete Message (for Organizer)
+    public async Task<AuthResult> DeleteMessageAsync(int groupId, int messageId, int organizerId)
+    {
+        var group = await _context.Groups.FindAsync(groupId);
+        if (group == null || group.OrganizerId != organizerId)
+            return AuthResult.Failure("Permission denied");
 
+        var message = await _context.GroupMessages.FindAsync(messageId);
+        if (message == null || message.GroupChat.GroupId != groupId)
+            return AuthResult.Failure("Message not found");
 
+        message.IsDeleted = true;
+        await _context.SaveChangesAsync();
 
+        return AuthResult.Success("Message deleted");
+    }
 
+    //  Add Member 
+    public async Task<AuthResult> AddMemberAsync(int groupId, int organizerId, int targetUserId)
+    {
+        var group = await _context.Groups.FindAsync(groupId);
+        if (group == null || group.OrganizerId != organizerId)
+            return AuthResult.Failure("Permission denied");
 
+        var existing = await _context.GroupMembers
+            .FirstOrDefaultAsync(gm => gm.GroupId == groupId && gm.UserId == targetUserId);
 
+        if (existing != null)
+        {
+            existing.IsActive = true;
+            await _context.SaveChangesAsync();
+            return AuthResult.Success("Member added");
+        }
 
+        var member = new GroupMemberModel
+        {
+            GroupId = groupId,
+            UserId = targetUserId,
+            Role = "member",
+            JoinedAt = DateTime.UtcNow,
+            IsActive = true
+        };
+        _context.GroupMembers.Add(member);
 
+        group.MemberCount++;
+        group.UpdatedAt = DateTime.UtcNow;
 
+        await _context.SaveChangesAsync();
+        return AuthResult.Success("Member added");
+    }
 }
 
-// DTOs
-public class CreateGroupDto
-{
-    public string Name { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public string? CoverImage { get; set; }
-    public string? City { get; set; }
-    public string? Country { get; set; }
-}
+//  DTO Classes 
 
-public class GroupDto
+public class ActivityItemDto
 {
     public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public string? CoverImage { get; set; }
-    public int OrganizerId { get; set; }
-    public string? OrganizerName { get; set; }
-    public string? City { get; set; }
-    public string? Country { get; set; }
-    public int MemberCount { get; set; }
-    public bool IsMember { get; set; }
-    public bool IsOrganizer { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public UserDto User { get; set; } = new UserDto();
+    public string Description { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+}
+
+public class DiscussionItemDto
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public int Replies { get; set; }
+    public DateTime LastActivity { get; set; }
+    public bool Trending { get; set; }
+}
+
+public class GalleryItemDto
+{
+    public int Id { get; set; }
+    public string Url { get; set; } = string.Empty;
+    public string UploadedBy { get; set; } = string.Empty;
+    public DateTime UploadedAt { get; set; }
+}
+
+public class UserDto
+{
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+}
+
+public class AddMemberDto
+{
+    public int TargetUserId { get; set; }
 }
