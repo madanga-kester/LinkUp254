@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GroupEventModel = LinkUp254.Features.Groups.Models.GroupEvent;
 using GroupMemberModel = LinkUp254.Features.Groups.Models.GroupMember;
+
 using GroupModel = LinkUp254.Features.Groups.Models.Group;
 
 namespace LinkUp254.Features.Groups;
@@ -661,6 +662,63 @@ public class GroupServices
 
         return members;
     }
+
+
+
+
+
+
+
+
+    public async Task<(bool IsSuccess, string? Message, GroupModel? Group)> UpdateGroupAsync(
+    int groupId,
+    int organizerId,
+    UpdateGroupDto dto)
+    {
+        // Fetch the group - DbSet<Group> is fine, no alias needed here
+        var group = await _context.Groups
+            .Include(g => g.Settings)
+            .FirstOrDefaultAsync(g => g.Id == groupId);
+
+        if (group == null)
+            return (false, "Group not found", null);
+
+        // Verify organizer
+        if (group.OrganizerId != organizerId)
+            return (false, "Only the organizer can update group details", null);
+
+        // Update fields
+        group.Name = dto.Name;
+        group.Description = dto.Description;
+        group.City = dto.City;
+        group.Country = dto.Country;
+        group.Location = dto.Location;
+        group.IsPrivate = dto.IsPrivate;
+        group.CoverImage = dto.CoverImage;
+        group.UpdatedAt = DateTime.UtcNow;
+
+        // Update settings if provided
+        if (group.Settings != null)
+        {
+            group.Settings.AllowMemberInvites = dto.AllowMemberInvites;
+            group.Settings.AllowMemberPosts = dto.AllowMemberPosts;
+            group.Settings.ModerateMessages = dto.ModerateMessages;
+        }
+
+        // Save changes
+        await _context.SaveChangesAsync();
+
+        // Return updated group - use alias for return type clarity
+        var updatedGroup = await _context.Groups
+            .Include(g => g.Organizer)
+            .Include(g => g.Settings)
+            .Include(g => g.GroupRules)
+            .FirstOrDefaultAsync(g => g.Id == groupId);
+
+        return (true, null, updatedGroup); // updatedGroup is type Group, implicitly converts to GroupModel
+    }
+
+
 }
 
 //  DTO Classes 

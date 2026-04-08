@@ -6,8 +6,9 @@ namespace LinkUp254.Features.Groups.Models;
 public class GroupSettings
 {
     [Key]
+    
     public int GroupId { get; set; }
-    public Group Group { get; set; } = null!;
+    public LinkUp254.Features.Groups.Models.Group Group { get; set; } = null!;
 
     // Membership controls
     public bool IsPrivate { get; set; } = false;  // Private = requires approval to join

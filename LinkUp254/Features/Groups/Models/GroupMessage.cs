@@ -10,7 +10,7 @@ public class GroupMessage
     public int Id { get; set; }
 
     public int GroupChatId { get; set; }
-    public GroupChat GroupChat { get; set; } = null!;  
+    public LinkUp254.Features.Groups.Models.GroupChat GroupChat { get; set; } = null!;
 
     public int SenderId { get; set; }
     public User Sender { get; set; } = null!;  

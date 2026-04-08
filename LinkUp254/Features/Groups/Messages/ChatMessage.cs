@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using LinkUp254.Features.Shared;
 using LinkUp254.Features.Events.models;
-using GroupEntity = LinkUp254.Features.Groups.Models.Group;  // ✅ Alias to avoid namespace conflict
+ 
 
 namespace LinkUp254.Features.Group.Messages;
 
@@ -27,7 +27,7 @@ public class ChatMessage : BaseEntity
     public int? GroupId { get; set; }
 
     [ForeignKey("GroupId")]
-    public GroupEntity? Group { get; set; }  
+    public LinkUp254.Features.Groups.Models.Group? Group { get; set; }
 
     public int? EventId { get; set; }
 

@@ -98,6 +98,34 @@ public class GroupController : ControllerBase
         });
     }
 
+
+
+
+    // PUT: api/groups/{id} - Update group details (organizer only)
+    [HttpPut("{id:int}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateGroup(int id, [FromBody] UpdateGroupDto dto)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _groupServices.UpdateGroupAsync(id, intUserId, dto);
+
+        return result.IsSuccess
+            ? Ok(new { isSuccess = true, message = "Group updated successfully", group = result.Group })
+            : BadRequest(new { message = result.Message ?? "Failed to update group" });
+    }
+
+
+
+
+
+
+
+
     // POST: api/groups/{id}/join - Join a group
     [HttpPost("{id:int}/join")]
     [Authorize]
@@ -149,7 +177,17 @@ public class GroupController : ControllerBase
         return result
             ? Ok(new { isSuccess = true, message = "Group deleted successfully" })
             : BadRequest(new { message = "Could not delete group (only organizer can delete)" });
+
+
     }
+
+
+
+
+
+
+
+
 
     // GROUP CHAT 
     // POST: api/groups/{id}/chat/send - Send a message
@@ -383,3 +421,29 @@ public class UpdateRoleDto
     public string NewRole { get; set; } = string.Empty;
 }
 
+
+public class UpdateGroupDto
+{
+    [Required, StringLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    [StringLength(500)]
+    public string? Description { get; set; }
+
+    [StringLength(100)]
+    public string? City { get; set; }
+
+    [StringLength(100)]
+    public string? Country { get; set; }
+
+    [StringLength(200)]
+    public string? Location { get; set; }
+
+    public bool IsPrivate { get; set; }
+    public bool AllowMemberInvites { get; set; } = true;
+    public bool AllowMemberPosts { get; set; } = true;
+    public bool ModerateMessages { get; set; }
+
+    [StringLength(500)]
+    public string? CoverImage { get; set; }
+}
