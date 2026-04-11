@@ -1,6 +1,9 @@
 ﻿using LinkUp254.Database;
 using LinkUp254.Features.Auth;
 using LinkUp254.Features.Groups.Models;
+
+using GroupModel = LinkUp254.Features.Groups.Models.Group;
+
 using LinkUp254.Features.Shared;
 using LinkUp254.Features.Groups.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +14,7 @@ using System.Threading.Tasks;
 using GroupEventModel = LinkUp254.Features.Groups.Models.GroupEvent;
 using GroupMemberModel = LinkUp254.Features.Groups.Models.GroupMember;
 
-using GroupModel = LinkUp254.Features.Groups.Models.Group;
+
 
 namespace LinkUp254.Features.Groups;
 
@@ -953,6 +956,51 @@ public class GroupServices
             return (false, $"Unexpected error: {ex.Message}", null);
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+    public async Task<List<GroupModel>> GetGroupsByOrganizerAsync(int organizerId)
+    {
+        return await _context.Groups
+            .Include(g => g.Organizer)
+            .Include(g => g.GroupMembers)
+            .Where(g => g.OrganizerId == organizerId && g.IsActive)
+            .OrderByDescending(g => g.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<List<GroupModel>> GetGroupsByMemberAsync(int userId, bool excludeOrganized = false)
+    {
+        var query = _context.GroupMembers
+            .Include(gm => gm.Group)
+                .ThenInclude(g => g.Organizer)
+            .Include(gm => gm.Group)
+                .ThenInclude(g => g.GroupMembers)
+            .Where(gm => gm.UserId == userId && gm.Group.IsActive);
+
+        if (excludeOrganized)
+        {
+            query = query.Where(gm => gm.Group.OrganizerId != userId);
+        }
+
+        return await query
+            .Select(gm => gm.Group)
+            .OrderByDescending(g => g.CreatedAt)
+            .ToListAsync();
+    }
+
+
+
+
+
 
 
 

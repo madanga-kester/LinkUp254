@@ -78,6 +78,64 @@ public class GroupController : ControllerBase
         return Ok(groups);
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // GET: api/groups/created - Groups the user has created (organizer)
+    [HttpGet("created")]
+    [Authorize]
+    public async Task<IActionResult> GetCreatedGroups()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var id))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var groups = await _groupServices.GetGroupsByOrganizerAsync(id);
+        return Ok(groups);
+    }
+
+
+
+    // GET: api/groups/joined - Groups the user has joined (as member, not organizer)
+    [HttpGet("joined")]
+    [Authorize]
+    public async Task<IActionResult> GetJoinedGroups()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var id))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var groups = await _groupServices.GetGroupsByMemberAsync(id, excludeOrganized: true);
+        return Ok(groups);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // POST: api/groups - Create new group
     [HttpPost]
     [Authorize]
