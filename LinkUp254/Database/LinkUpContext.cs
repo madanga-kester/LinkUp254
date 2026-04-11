@@ -338,29 +338,6 @@ modelBuilder.Entity<LinkUp254.Features.Groups.Models.GroupJoinRequest>(entity =>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         }
 
 

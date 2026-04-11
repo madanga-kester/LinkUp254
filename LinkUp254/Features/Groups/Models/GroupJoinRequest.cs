@@ -21,7 +21,7 @@ public class GroupJoinRequest
     public string Status { get; set; } = "pending";  // pending, approved, rejected
     public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ReviewedAt { get; set; }
-    public int? ReviewedBy { get; set; }  // Admin who reviewed
+    public int? ReviewedBy { get; set; }  // Admin rewiwer admin
 
     [MaxLength(500)]
     public string? ReviewNotes { get; set; }

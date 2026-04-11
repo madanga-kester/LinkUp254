@@ -13,6 +13,7 @@ namespace LinkUp254.Features.Groups;
 public class GroupController : ControllerBase
 {
     private readonly GroupServices _groupServices;
+    
 
     public GroupController(GroupServices groupServices)
     {
@@ -62,7 +63,7 @@ public class GroupController : ControllerBase
         return Ok(response);
     }
 
-    // GET: api/groups/my-groups - Groups user belongs to
+    // GET: api/groups/my-groups - Groups users belongs to
     [HttpGet("my-groups")]
     [Authorize]
     public async Task<IActionResult> GetMyGroups()
@@ -101,6 +102,60 @@ public class GroupController : ControllerBase
 
 
 
+
+
+    // cover images
+
+
+
+
+    [RequestSizeLimit(10 * 1024 * 1024)] // 10MB
+    [HttpPut("{id:int}/cover-image")]
+    [Authorize]
+    public async Task<IActionResult> UpdateCoverImage(int id, [FromBody] UpdateCoverImageDto dto)
+    {
+        try
+        {
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] UpdateCoverImage START: id={id}, CoverImage length={(dto.CoverImage?.Length ?? 0)}");
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                      ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+                return Unauthorized(new { message = "Authentication required" });
+
+            var result = await _groupServices.UpdateCoverImageAsync(id, intUserId, dto.CoverImage);
+
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] UpdateCoverImage END: IsSuccess={result.IsSuccess}");
+
+            return result.IsSuccess
+                ? Ok(new { isSuccess = true, message = "Cover image updated successfully", coverImage = result.CoverImage })
+                : BadRequest(new { message = result.Message ?? "Failed to update cover image" });
+        }
+        catch (Exception ex)
+        {
+            // Loging  error to console
+            System.Diagnostics.Debug.WriteLine($"[ERROR] UpdateCoverImage CRASHED: {ex.Message}\n{ex.StackTrace}");
+            return StatusCode(500, new { message = $"Server error: {ex.Message}" });
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // PUT: api/groups/{id} - Update group details (organizer only)
     [HttpPut("{id:int}")]
     [Authorize]
@@ -125,10 +180,8 @@ public class GroupController : ControllerBase
 
 
 
-
-    // POST: api/groups/{id}/join - Join a group
     [HttpPost("{id:int}/join")]
-    [Authorize]
+    [Authorize]  
     public async Task<IActionResult> JoinGroup(int id)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -137,13 +190,33 @@ public class GroupController : ControllerBase
         if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
             return Unauthorized(new { message = "Authentication required" });
 
-        var result = await _groupServices.JoinGroupAsync(id, intUserId);
+        var (isSuccess, message, isPending) = await _groupServices.JoinGroupAsync(id, intUserId);
+
+        if (!isSuccess)
+        {
+            if (isPending)
+                return Ok(new { isSuccess = true, isPending = true, message });
+            else
+                return BadRequest(new { isSuccess = false, message });
+        }
+
         return Ok(new
         {
             isSuccess = true,
-            message = result ? "Joined group successfully" : "You are already a member"
+            isPending = isPending,
+            message
         });
     }
+
+
+
+
+
+
+
+
+
+
 
     // POST: api/groups/{id}/leave - Leave a group
     [HttpPost("{id:int}/leave")]
@@ -285,6 +358,19 @@ public class GroupController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
+
+
+
+
+
+ 
+
+
+
+
+
+
+
     // GET: api/groups/{id}/join-requests/pending - Get pending requests (organizer only)
     [HttpGet("{id:int}/join-requests/pending")]
     [Authorize]
@@ -407,6 +493,32 @@ public class GroupController : ControllerBase
         var members = await _groupServices.GetGroupMembersAsync(id);
         return Ok(members);
     }
+
+
+
+
+
+
+
+    //  Get Join Status
+    [HttpGet("{id:int}/join-status")]
+    [Authorize]
+    public async Task<IActionResult> GetJoinStatus(int id)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized();
+
+        var status = await _groupServices.GetJoinRequestStatusAsync(id, intUserId);
+        return Ok(new { status });
+    }
+
+
+
+
+
 }
 
 // DTOs
@@ -446,4 +558,11 @@ public class UpdateGroupDto
 
     [StringLength(500)]
     public string? CoverImage { get; set; }
+}
+public class UpdateCoverImageDto
+{
+   /// <summary>
+   /// /[StringLength(500)]
+   /// </summary>
+    public string? CoverImage { get; set; } // URL or base64 data URL
 }

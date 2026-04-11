@@ -139,38 +139,135 @@ public class GroupServices
         return group;
     }
 
-    public async Task<bool> JoinGroupAsync(int groupId, int userId)
+
+
+
+    //join a group
+    public async Task<(bool IsSuccess, string Message, bool IsPending)> JoinGroupAsync(int groupId, int userId)
     {
-        var existing = await _context.GroupMembers
-            .FirstOrDefaultAsync(gm => gm.GroupId == groupId && gm.UserId == userId);
+        // 1. Get group
+        var group = await _context.Groups
+            .Include(g => g.Settings)
+            .FirstOrDefaultAsync(g => g.Id == groupId && g.IsActive);
 
-        if (existing != null)
-        {
-            existing.IsActive = true;
-            await _context.SaveChangesAsync();
-            return false;
-        }
+        if (group == null)
+            return (false, "Group not found", false);
 
-        var member = new GroupMemberModel
-        {
-            GroupId = groupId,
-            UserId = userId,
-            Role = "member",
-            JoinedAt = DateTime.UtcNow,
-            IsActive = true
-        };
-        _context.GroupMembers.Add(member);
+        // 2. Check if  a user is already a member
+        var isMember = await _context.GroupMembers
+            .AnyAsync(gm => gm.GroupId == groupId && gm.UserId == userId && gm.IsActive);
 
-        var group = await _context.Groups.FindAsync(groupId);
-        if (group != null)
+        if (isMember)
+            return (false, "You are already a member of this group", false);
+
+        // 3. Determine Privacy
+        bool isPrivate = group.IsPrivate || (group.Settings?.IsPrivate ?? false);
+
+        if (!isPrivate)
         {
+            //  PUBLIC GROUP: Join directly
+            var member = new GroupMemberModel
+            {
+                GroupId = groupId,
+                UserId = userId,
+                Role = "member",
+                JoinedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            _context.GroupMembers.Add(member);
             group.MemberCount++;
             group.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return (true, "Joined group successfully!", false);
+        }
+        else
+        {
+            //  PRIVATE GROUP: Handle requests
+            var existingRequest = await _context.GroupJoinRequests
+                .FirstOrDefaultAsync(r => r.GroupId == groupId && r.UserId == userId);
+
+            if (existingRequest != null)
+            {
+                // if Rejected ,Allow Re-apply
+                if (existingRequest.Status == "rejected")
+                {
+                    existingRequest.Status = "pending";
+                    existingRequest.RequestedAt = DateTime.UtcNow;
+                    existingRequest.ReviewNotes = null;
+                    await _context.SaveChangesAsync();
+                    return (true, "Join request sent!", true);
+                }
+                // if Pending  Already pending
+                if (existingRequest.Status == "pending")
+                {
+                    return (true, "Request is already pending.", true);
+                }
+                // if Approved -> Should be member, but just in case
+                if (existingRequest.Status == "approved")
+                {
+                    var member = new GroupMemberModel
+                    {
+                        GroupId = groupId,
+                        UserId = userId,
+                        Role = "member",
+                        JoinedAt = DateTime.UtcNow,
+                        IsActive = true
+                    };
+                    _context.GroupMembers.Add(member);
+                    group.MemberCount++;
+                    await _context.SaveChangesAsync();
+                    return (true, "Joined group successfully!", false);
+                }
+            }
+
+            // Case: New Request
+            var newRequest = new GroupJoinRequest
+            {
+                GroupId = groupId,
+                UserId = userId,
+                Status = "pending",
+                Message = null,
+                RequestedAt = DateTime.UtcNow
+            };
+
+            _context.GroupJoinRequests.Add(newRequest);
+            await _context.SaveChangesAsync();
+            return (true, "Join request sent!", true);
+        }
+    }
+
+
+
+    // Getting exact join status for frontend
+    public async Task<string> GetJoinRequestStatusAsync(int groupId, int userId)
+    {
+        // 1. Check if member
+        var isMember = await _context.GroupMembers
+            .AnyAsync(gm => gm.GroupId == groupId && gm.UserId == userId && gm.IsActive);
+
+        if (isMember) return "member";
+
+        // 2. Check request
+        var request = await _context.GroupJoinRequests
+            .FirstOrDefaultAsync(r => r.GroupId == groupId && r.UserId == userId);
+
+        if (request != null)
+        {
+            if (request.Status == "pending") return "pending";
+            if (request.Status == "rejected") return "rejected";
+            if (request.Status == "approved") return "member"; 
         }
 
-        await _context.SaveChangesAsync();
-        return true;
+        return "none"; // No request found
     }
+
+
+
+
+
+    //      Leave a group
+
 
     public async Task<bool> LeaveGroupAsync(int groupId, int userId)
     {
@@ -215,6 +312,11 @@ public class GroupServices
         await _context.SaveChangesAsync();
         return true;
     }
+
+
+
+
+    //         Messaging
 
     public async Task<AuthResult> SendMessageAsync(int groupId, int userId, string content)
     {
@@ -283,6 +385,9 @@ public class GroupServices
         return await _context.GroupSettings.FindAsync(groupId);
     }
 
+
+    //         Update Group Settings (for the Organizer)
+
     public async Task<AuthResult> UpdateSettingsAsync(int groupId, int organizerId, UpdateGroupSettingsDto dto)
     {
         var group = await _context.Groups.FindAsync(groupId);
@@ -305,11 +410,25 @@ public class GroupServices
         if (dto.NotifyOnNewEvent.HasValue) settings.NotifyOnNewEvent = dto.NotifyOnNewEvent.Value;
         if (dto.NotifyOnNewMember.HasValue) settings.NotifyOnNewMember = dto.NotifyOnNewMember.Value;
 
+      
+        if (group.IsPrivate != dto.IsPrivate)
+        {
+            group.IsPrivate = (bool)dto.IsPrivate;
+            group.UpdatedAt = DateTime.UtcNow; 
+        }
+
         settings.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
         return AuthResult.Success("Settings updated.");
     }
+
+
+
+
+
+
+
 
     public async Task<AuthResult> AddRuleAsync(int groupId, int organizerId, CreateGroupRuleDto dto)
     {
@@ -344,6 +463,8 @@ public class GroupServices
             .ToListAsync();
     }
 
+
+    // request to join 
     public async Task<AuthResult> RequestJoinAsync(int groupId, int userId, string? message)
     {
         var group = await _context.Groups
@@ -353,37 +474,20 @@ public class GroupServices
         if (group == null)
             return AuthResult.Failure("Group not found.");
 
-        var existingMember = await _context.GroupMembers
-            .AnyAsync(gm => gm.GroupId == groupId && gm.UserId == userId && gm.IsActive);
-
-        if (existingMember)
+        //if already a member
+        if (await _context.GroupMembers.AnyAsync(gm => gm.GroupId == groupId && gm.UserId == userId && gm.IsActive))
             return AuthResult.Failure("You are already a member of this group.");
 
-        var existingRequest = await _context.GroupJoinRequests
-            .AnyAsync(r => r.GroupId == groupId && r.UserId == userId && r.Status == "pending");
-
-        if (existingRequest)
+        // Check for existing pending request
+        if (await _context.GroupJoinRequests.AnyAsync(r => r.GroupId == groupId && r.UserId == userId && r.Status == "pending"))
             return AuthResult.Failure("You already have a pending request to join this group.");
 
-        if (!(group.Settings?.IsPrivate ?? false))
-        {
-            var member = new GroupMemberModel
-            {
-                GroupId = groupId,
-                UserId = userId,
-                Role = "member",
-                JoinedAt = DateTime.UtcNow,
-                IsActive = true
-            };
-            _context.GroupMembers.Add(member);
+        bool isPrivate = group.IsPrivate || (group.Settings?.IsPrivate ?? false);
 
-            group.MemberCount++;
-            group.UpdatedAt = DateTime.UtcNow;
+        if (!isPrivate)
+            return AuthResult.Success("This is a public group. Please use the Join button instead.");
 
-            await _context.SaveChangesAsync();
-            return AuthResult.Success("Joined group successfully.");
-        }
-
+        // Create join request for private group
         var request = new GroupJoinRequest
         {
             GroupId = groupId,
@@ -396,21 +500,53 @@ public class GroupServices
         _context.GroupJoinRequests.Add(request);
         await _context.SaveChangesAsync();
 
-        return AuthResult.Success("Join request submitted. Waiting for organizer approval.");
+        return AuthResult.Success("Join request submitted successfully. Waiting for organizer approval.");
     }
 
-    public async Task<List<GroupJoinRequest>> GetPendingJoinRequestsAsync(int groupId, int organizerId)
-    {
-        var group = await _context.Groups.FindAsync(groupId);
-        if (group == null || group.OrganizerId != organizerId)
-            return new List<GroupJoinRequest>();
 
-        return await _context.GroupJoinRequests
+
+
+
+
+
+    public async Task<List<PendingRequestDto>> GetPendingJoinRequestsAsync(int groupId, int organizerId)
+    {
+        //  Verify group exists and user is organizer
+        var group = await _context.Groups
+            .Include(g => g.Settings)
+            .FirstOrDefaultAsync(g => g.Id == groupId);
+
+        if (group == null || group.OrganizerId != organizerId)
+            return new List<PendingRequestDto>(); // Return empty,
+
+
+        // Fetch ONLY pending requests for this group
+        var pendingRequests = await _context.GroupJoinRequests
             .Where(r => r.GroupId == groupId && r.Status == "pending")
-            .Include(r => r.User)
+            .Include(r => r.User) 
             .OrderByDescending(r => r.RequestedAt)
             .ToListAsync();
+
+        
+        return pendingRequests.Select(r => new PendingRequestDto
+        {
+            Id = r.Id,
+            User = new UserDto 
+            {
+                Id = r.User.Id,
+                FirstName = r.User.FirstName,
+                LastName = r.User.LastName,
+                ProfilePicture = r.User.ProfilePicture
+            },
+            Message = r.Message,
+            RequestedAt = r.RequestedAt
+        }).ToList();
     }
+
+
+
+
+
 
     public async Task<AuthResult> ReviewJoinRequestAsync(int requestId, int organizerId, bool approve, string? notes)
     {
@@ -418,12 +554,18 @@ public class GroupServices
             .Include(r => r.Group)
             .FirstOrDefaultAsync(r => r.Id == requestId);
 
-        if (request == null || request.Group.OrganizerId != organizerId)
+        if (request == null)
             return AuthResult.Failure("Request not found or permission denied.");
 
+        //  Verify organizer permission
+        if (request.Group == null || request.Group.OrganizerId != organizerId)
+            return AuthResult.Failure("Permission denied.");
+
+        //  Only allow reviewing pending requests
         if (request.Status != "pending")
             return AuthResult.Failure("Request has already been reviewed.");
 
+        //  Update request status
         request.Status = approve ? "approved" : "rejected";
         request.ReviewedAt = DateTime.UtcNow;
         request.ReviewedBy = organizerId;
@@ -431,24 +573,59 @@ public class GroupServices
 
         if (approve)
         {
-            var member = new GroupMemberModel
-            {
-                GroupId = request.GroupId,
-                UserId = request.UserId,
-                Role = "member",
-                JoinedAt = DateTime.UtcNow,
-                IsActive = true
-            };
-            _context.GroupMembers.Add(member);
+            //  Check if user is already a member before adding
+            var existingMember = await _context.GroupMembers
+                .FirstOrDefaultAsync(gm => gm.GroupId == request.GroupId && gm.UserId == request.UserId);
 
-            request.Group.MemberCount++;
+            if (existingMember != null)
+            {
+                //  Reactivate if was previously removed
+                existingMember.IsActive = true;
+                existingMember.JoinedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                // Add new member
+                var member = new GroupMemberModel
+                {
+                    GroupId = request.GroupId,
+                    UserId = request.UserId,
+                    Role = "member",
+                    JoinedAt = DateTime.UtcNow,
+                    IsActive = true
+                };
+                _context.GroupMembers.Add(member);
+            }
+
+            //  Update group member count only if not already counted
+            if (request.Group.MemberCount < (await _context.GroupMembers.CountAsync(gm => gm.GroupId == request.GroupId && gm.IsActive)))
+            {
+                request.Group.MemberCount++;
+            }
             request.Group.UpdatedAt = DateTime.UtcNow;
         }
 
         await _context.SaveChangesAsync();
-
         return AuthResult.Success(approve ? "Member approved and added." : "Request rejected.");
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public async Task<AuthResult> RemoveMemberAsync(int groupId, int organizerId, int targetUserId)
     {
@@ -675,7 +852,7 @@ public class GroupServices
     int organizerId,
     UpdateGroupDto dto)
     {
-        // Fetch the group - DbSet<Group> is fine, no alias needed here
+        // Fetch the group - DbSet<Group> 
         var group = await _context.Groups
             .Include(g => g.Settings)
             .FirstOrDefaultAsync(g => g.Id == groupId);
@@ -715,8 +892,73 @@ public class GroupServices
             .Include(g => g.GroupRules)
             .FirstOrDefaultAsync(g => g.Id == groupId);
 
-        return (true, null, updatedGroup); // updatedGroup is type Group, implicitly converts to GroupModel
+        return (true, null, updatedGroup); 
     }
+
+
+
+
+
+
+
+
+    public async Task<(bool IsSuccess, string? Message, string? CoverImage)> UpdateCoverImageAsync(
+    int groupId,
+    int organizerId,
+    string? coverImageUrl)
+    {
+        try
+        {
+            var group = await _context.Groups.FirstOrDefaultAsync(g => g.Id == groupId);
+
+            if (group == null)
+                return (false, "Group not found", null);
+
+            if (group.OrganizerId != organizerId)
+                return (false, "Only the organizer can update the cover image", null);
+
+            if (!string.IsNullOrEmpty(coverImageUrl))
+            {
+                
+                if (coverImageUrl.StartsWith("image") && coverImageUrl.Length > 5_000_000) // 5MB safety limit
+                {
+                    return (false, "Image too large. Please use an external URL or compress the image.", null);
+                }
+
+                group.CoverImage = coverImageUrl;
+                group.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                return (true, null, group.CoverImage);
+            }
+
+            return (false, "Cover image cannot be empty", null);
+        }
+        catch (Microsoft.Data.SqlClient.SqlException sqlEx)
+        {
+            //  Log the  SQL error
+            System.Diagnostics.Debug.WriteLine($"[SQL ERROR] UpdateCoverImageAsync: {sqlEx.Message}\nNumber: {sqlEx.Number}");
+
+           
+            if (sqlEx.Number == 8152)
+            {
+                return (false, "Cover image too large for database. Please use a smaller image or external URL.", null);
+            }
+
+            return (false, $"Database error: {sqlEx.Message}", null);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SERVICE ERROR] UpdateCoverImageAsync: {ex.Message}\n{ex.InnerException?.Message}");
+            return (false, $"Unexpected error: {ex.Message}", null);
+        }
+    }
+
+
+
+
+
+
 
 
 }
@@ -749,11 +991,7 @@ public class GalleryItemDto
     public DateTime UploadedAt { get; set; }
 }
 
-//public class UserDto
-//{
-//    public string FirstName { get; set; } = string.Empty;
-//    public string LastName { get; set; } = string.Empty;
-//}
+
 public class UserDto
 {
     public int Id { get; set; }
@@ -775,3 +1013,10 @@ public class GroupMemberResponseDto
     public DateTime JoinedAt { get; set; }
     public UserDto User { get; set; } = new UserDto();
 }
+
+
+
+
+
+
+
