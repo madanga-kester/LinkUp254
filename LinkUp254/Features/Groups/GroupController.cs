@@ -393,12 +393,52 @@ public class GroupController : ControllerBase
     }
 
     // GET: api/groups/{id}/rules - Get all rules
+    //[HttpGet("{id:int}/rules")]
+    //public async Task<IActionResult> GetRules(int id)
+    //{
+    //    var rules = await _groupServices.GetGroupRulesAsync(id);
+    //    return Ok(rules);
+    //}
+
+    // GET: api/groups/{id}/rules - Get all rules
     [HttpGet("{id:int}/rules")]
     public async Task<IActionResult> GetRules(int id)
     {
         var rules = await _groupServices.GetGroupRulesAsync(id);
         return Ok(rules);
     }
+
+    //  POST: api/groups/{id}/discussions - Create a new discussion
+    [HttpPost("{id:int}/discussions")]
+    [Authorize]
+    public async Task<IActionResult> CreateDiscussion(int id, [FromBody] CreateDiscussionDto dto)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _groupServices.CreateDiscussionAsync(id, intUserId, dto);
+        return result.IsSuccess
+            ? Ok(new { isSuccess = true, message = result.Message })
+            : BadRequest(new { message = result.Message });
+    }
+
+    //  UPDATED GET: api/groups/{id}/discussions - fetches real discussions
+    [HttpGet("{id:int}/discussions")]
+    public async Task<IActionResult> GetDiscussions(int id)
+    {
+        var discussions = await _groupServices.GetDiscussionsAsync(id);
+        return Ok(discussions);
+    }
+
+
+
+
+
+
+
 
     // MEMBER REQUESTS
     // POST: api/groups/{id}/join-request - Request to join (for PRIVATE groups)
@@ -499,12 +539,12 @@ public class GroupController : ControllerBase
     }
 
     // GET: api/groups/{id}/discussions
-    [HttpGet("{id:int}/discussions")]
-    public async Task<IActionResult> GetDiscussions(int id)
-    {
-        var discussions = await _groupServices.GetDiscussionsAsync(id);
-        return Ok(discussions);
-    }
+    //[HttpGet("{id:int}/discussions")]
+    //public async Task<IActionResult> GetDiscussions(int id)
+    //{
+    //    var discussions = await _groupServices.GetDiscussionsAsync(id);
+    //    return Ok(discussions);
+    //}
 
     // GET: api/groups/{id}/gallery
     [HttpGet("{id:int}/gallery")]

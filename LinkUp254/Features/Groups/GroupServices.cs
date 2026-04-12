@@ -458,6 +458,13 @@ public class GroupServices
         return AuthResult.Success("Rule added.");
     }
 
+    //public async Task<List<GroupRule>> GetGroupRulesAsync(int groupId)
+    //{
+    //    return await _context.GroupRules
+    //        .Where(gr => gr.GroupId == groupId && gr.IsActive)
+    //        .OrderBy(gr => gr.Order)
+    //        .ToListAsync();
+    //}
     public async Task<List<GroupRule>> GetGroupRulesAsync(int groupId)
     {
         return await _context.GroupRules
@@ -465,6 +472,80 @@ public class GroupServices
             .OrderBy(gr => gr.Order)
             .ToListAsync();
     }
+
+    // Create a new discussion
+    public async Task<AuthResult> CreateDiscussionAsync(int groupId, int userId, CreateDiscussionDto dto)
+    {
+        // Verify group exists and is active
+        var group = await _context.Groups
+            .Include(g => g.Settings)
+            .FirstOrDefaultAsync(g => g.Id == groupId && g.IsActive);
+
+        if (group == null)
+            return AuthResult.Failure("Group not found.");
+
+        // Verify user is a member (or organizer)
+        var isMember = await _context.GroupMembers
+            .AnyAsync(gm => gm.GroupId == groupId && gm.UserId == userId && gm.IsActive);
+
+        if (!isMember)
+            return AuthResult.Failure("You must be a member to create discussions.");
+
+        // Create discussion
+        var discussion = new GroupDiscussion
+        {
+            GroupId = groupId,
+            AuthorId = userId,
+            Title = dto.Title.Trim(),
+            Content = dto.Content?.Trim() ?? string.Empty,
+            IsPinned = dto.IsPinned,
+            IsLocked = false,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            SourceMessageId = dto.SourceMessageId 
+        };
+
+        _context.GroupDiscussions.Add(discussion);
+        await _context.SaveChangesAsync();
+
+        return AuthResult.Success("Discussion created.");
+    }
+
+    //  Get discussions for a group 
+    public async Task<List<DiscussionItemDto>> GetDiscussionsAsync(int groupId)
+    {
+        var discussions = await _context.GroupDiscussions
+            .Where(d => d.GroupId == groupId && d.IsActive)
+            .Include(d => d.Author)
+            .OrderByDescending(d => d.IsPinned)
+            .ThenByDescending(d => d.CreatedAt)
+            .Take(50)
+            .ToListAsync();
+
+        return discussions.Select(d => new DiscussionItemDto
+        {
+            Id = d.Id,
+            Title = d.Title,
+            Content = d.Content,
+            AuthorId = d.AuthorId,
+            Author = new UserDto
+            {
+                Id = d.Author.Id,
+                FirstName = d.Author.FirstName,
+                LastName = d.Author.LastName,
+                ProfilePicture = d.Author.ProfilePicture
+            },
+            ReplyCount = d.ReplyCount,
+            ViewCount = d.ViewCount,
+            IsPinned = d.IsPinned,
+            IsLocked = d.IsLocked,
+            CreatedAt = d.CreatedAt,
+            UpdatedAt = d.UpdatedAt,
+            Trending = d.ViewCount > 100 || d.ReplyCount > 10,
+            SourceMessageId = d.SourceMessageId
+        }).ToList();
+    }
+
 
 
     // request to join 
@@ -722,26 +803,33 @@ public class GroupServices
         return activities.OrderByDescending(a => a.CreatedAt).Take(20).ToList();
     }
 
-    //  Discussions 
-    public async Task<List<DiscussionItemDto>> GetDiscussionsAsync(int groupId)
-    {
-        var discussions = await _context.GroupMessages
-            .Where(m => m.GroupChat.GroupId == groupId && !m.IsDeleted)
-            .GroupBy(m => m.Content.Length > 50 ? m.Content.Substring(0, 50) : m.Content)
-            .Select(g => new DiscussionItemDto
-            {
-                Id = g.Key.GetHashCode(),
-                Title = g.Key + "...",
-                Replies = g.Count(),
-                LastActivity = g.Max(m => m.SentAt),
-                Trending = g.Count() > 5
-            })
-            .OrderByDescending(d => d.Replies)
-            .Take(10)
-            .ToListAsync();
 
-        return discussions;
-    }
+
+    //  Discussions 
+    //public async Task<List<DiscussionItemDto>> GetDiscussionsAsync(int groupId)
+    //{
+    //    var discussions = await _context.GroupMessages
+    //        .Where(m => m.GroupChat.GroupId == groupId && !m.IsDeleted)
+    //        .GroupBy(m => m.Content.Length > 50 ? m.Content.Substring(0, 50) : m.Content)
+    //        .Select(g => new DiscussionItemDto
+    //        {
+    //            Id = g.Key.GetHashCode(),
+    //            Title = g.Key + "...",
+    //            Replies = g.Count(),
+    //            LastActivity = g.Max(m => m.SentAt),
+    //            Trending = g.Count() > 5
+    //        })
+    //        .OrderByDescending(d => d.Replies)
+    //        .Take(10)
+    //        .ToListAsync();
+
+    //    return discussions;
+    //}
+
+
+
+
+
 
     //  Gallery
     public async Task<List<GalleryItemDto>> GetGalleryAsync(int groupId)
@@ -1022,13 +1110,22 @@ public class ActivityItemDto
     public DateTime CreatedAt { get; set; }
 }
 
+
 public class DiscussionItemDto
 {
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
-    public int Replies { get; set; }
-    public DateTime LastActivity { get; set; }
+    public string Content { get; set; } = string.Empty;
+    public int AuthorId { get; set; }
+    public UserDto Author { get; set; } = new UserDto();
+    public int ReplyCount { get; set; }
+    public int ViewCount { get; set; }
+    public bool IsPinned { get; set; }
+    public bool IsLocked { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     public bool Trending { get; set; }
+    public int? SourceMessageId { get; set; }
 }
 
 public class GalleryItemDto

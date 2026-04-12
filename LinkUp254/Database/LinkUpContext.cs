@@ -1,5 +1,6 @@
 ﻿using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Group.Messages;
+using LinkUp254.Features.Groups.Models;
 using LinkUp254.Features.Shared;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -17,6 +18,8 @@ namespace LinkUp254.Database
         public DbSet<Ticket> Tickets { get; set; } = null!;
         public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
         public DbSet<OtpCodes> OtpCodes { get; set; } = null!;
+
+        public DbSet<GroupDiscussion> GroupDiscussions { get; set; }
 
         //  name for Shared.
         public DbSet<LinkUp254.Features.Shared.UserInterest> UserInterests { get; set; } = null!;

@@ -7,7 +7,6 @@ namespace LinkUp254.Features.Groups.DTOs;
 
 public class CreateGroupDto
 {
-    // Required basic fields
     [Required]
     [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
@@ -108,4 +107,22 @@ public class ReviewJoinRequestDto
 {
     public bool Approve { get; set; }
     public string? Notes { get; set; }
+}
+
+
+
+
+
+public class CreateDiscussionDto
+{
+    [Required, StringLength(200)]
+    public string Title { get; set; } = string.Empty;
+
+    [StringLength(5000)]
+    public string Content { get; set; } = string.Empty;
+
+    public bool IsPinned { get; set; } = false;
+
+    // Optional: Track if promoted from chat message
+    public int? SourceMessageId { get; set; }
 }
