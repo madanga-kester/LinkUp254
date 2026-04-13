@@ -82,15 +82,6 @@ public class GroupController : ControllerBase
 
 
 
-
-
-
-
-
-
-
-
-
     // GET: api/groups/created - Groups the user has created (organizer)
     [HttpGet("created")]
     [Authorize]
@@ -126,16 +117,6 @@ public class GroupController : ControllerBase
 
 
 
-
-
-
-
-
-
-
-
-
-
     // POST: api/groups - Create new group
     [HttpPost]
     [Authorize]
@@ -159,12 +140,7 @@ public class GroupController : ControllerBase
 
 
 
-
-
-
     // cover images
-
-
 
 
     [RequestSizeLimit(10 * 1024 * 1024)] // 10MB
@@ -192,24 +168,11 @@ public class GroupController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Loging  error to console
+            // Logging error to console
             System.Diagnostics.Debug.WriteLine($"[ERROR] UpdateCoverImage CRASHED: {ex.Message}\n{ex.StackTrace}");
             return StatusCode(500, new { message = $"Server error: {ex.Message}" });
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -271,11 +234,6 @@ public class GroupController : ControllerBase
 
 
 
-
-
-
-
-
     // POST: api/groups/{id}/leave - Leave a group
     [HttpPost("{id:int}/leave")]
     [Authorize]
@@ -292,6 +250,9 @@ public class GroupController : ControllerBase
             ? Ok(new { isSuccess = true, message = "Left group successfully" })
             : BadRequest(new { message = "Could not leave group (you may be the organizer)" });
     }
+
+
+
 
     // DELETE: api/groups/{id} - Delete group (organizer only)
     [HttpDelete("{id:int}")]
@@ -321,6 +282,7 @@ public class GroupController : ControllerBase
 
 
     // GROUP CHAT 
+
     // POST: api/groups/{id}/chat/send - Send a message
     [HttpPost("{id:int}/chat/send")]
     [Authorize]
@@ -335,6 +297,8 @@ public class GroupController : ControllerBase
         var result = await _groupServices.SendMessageAsync(id, intUserId, dto.Content);
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
+
+
 
     // GET: api/groups/{id}/chat/messages - Get recent messages
     [HttpGet("{id:int}/chat/messages")]
@@ -351,7 +315,11 @@ public class GroupController : ControllerBase
         return Ok(messages);
     }
 
+
+
     // GROUP SETTINGS 
+
+
     // PUT: api/groups/{id}/settings - Update group settings
     [HttpPut("{id:int}/settings")]
     [Authorize]
@@ -367,6 +335,8 @@ public class GroupController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
+
+
     // GET: api/groups/{id}/settings - Get current settings
     [HttpGet("{id:int}/settings")]
     [Authorize]
@@ -376,7 +346,12 @@ public class GroupController : ControllerBase
         return settings != null ? Ok(settings) : NotFound(new { message = "Settings not found" });
     }
 
+
+
     // GROUP RULES
+
+
+
     // POST: api/groups/{id}/rules - Add a new rule
     [HttpPost("{id:int}/rules")]
     [Authorize]
@@ -392,13 +367,8 @@ public class GroupController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
-    // GET: api/groups/{id}/rules - Get all rules
-    //[HttpGet("{id:int}/rules")]
-    //public async Task<IActionResult> GetRules(int id)
-    //{
-    //    var rules = await _groupServices.GetGroupRulesAsync(id);
-    //    return Ok(rules);
-    //}
+   
+
 
     // GET: api/groups/{id}/rules - Get all rules
     [HttpGet("{id:int}/rules")]
@@ -407,6 +377,9 @@ public class GroupController : ControllerBase
         var rules = await _groupServices.GetGroupRulesAsync(id);
         return Ok(rules);
     }
+
+
+
 
     //  POST: api/groups/{id}/discussions - Create a new discussion
     [HttpPost("{id:int}/discussions")]
@@ -425,7 +398,9 @@ public class GroupController : ControllerBase
             : BadRequest(new { message = result.Message });
     }
 
-    //  UPDATED GET: api/groups/{id}/discussions - fetches real discussions
+
+
+    //  GET: api/groups/{id}/discussions -  real discussions
     [HttpGet("{id:int}/discussions")]
     public async Task<IActionResult> GetDiscussions(int id)
     {
@@ -436,11 +411,68 @@ public class GroupController : ControllerBase
 
 
 
+    //  GET: api/discussions/{id} - Full thread + replies
+    [HttpGet("discussions/{id:int}")]
+    [Authorize]
+    public async Task<IActionResult> GetDiscussionDetail(int id)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var detail = await _groupServices.GetDiscussionWithRepliesAsync(id, intUserId);
+        return detail != null
+            ? Ok(detail)
+            : NotFound(new { message = "Discussion not found or access denied" });
+    }
+
+
+
+
+    //  POST: api/discussions/{id}/replies - Add a reply
+    [HttpPost("discussions/{id:int}/replies")]
+    [Authorize]
+    public async Task<IActionResult> AddReply(int id, [FromBody] CreateReplyDto dto)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _groupServices.AddReplyAsync(id, intUserId, dto);
+        return result.IsSuccess ? Ok(new { isSuccess = true, message = result.Message }) : BadRequest(new { message = result.Message });
+    }
+
+
+
+
+    //  POST: api/reactions/{targetType}/{targetId} - Toggle reaction
+    [HttpPost("reactions/{targetType}/{targetId:int}")]
+    [Authorize]
+    public async Task<IActionResult> ToggleReaction(string targetType, int targetId, [FromBody] ToggleReactionDto dto)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _groupServices.ToggleReactionAsync(targetType, targetId, intUserId, dto.Type);
+        return result.IsSuccess ? Ok(new { isSuccess = true, message = result.Message }) : BadRequest(new { message = result.Message });
+    }
+
+    public class ToggleReactionDto
+    {
+        public string Type { get; set; } = "upvote"; // "upvote", "helpful", "love"
+    }
+
+
 
 
 
 
     // MEMBER REQUESTS
+
+
     // POST: api/groups/{id}/join-request - Request to join (for PRIVATE groups)
     [HttpPost("{id:int}/join-request")]
     [Authorize]
@@ -455,15 +487,6 @@ public class GroupController : ControllerBase
         var result = await _groupServices.RequestJoinAsync(id, intUserId, dto.Message);
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
-
-
-
-
-
-
- 
-
-
 
 
 
@@ -484,6 +507,7 @@ public class GroupController : ControllerBase
         return Ok(requests);
     }
 
+
     // PUT: api/groups/join-requests/{requestId}/review - Review a join request
     [HttpPut("join-requests/{requestId:int}/review")]
     [Authorize]
@@ -499,7 +523,12 @@ public class GroupController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
+
+
+
     // MEMBER MANAGEMENT
+
+
     // DELETE: api/groups/{id}/members/{userId} - Remove a member
     [HttpDelete("{id:int}/members/{userId:int}")]
     [Authorize]
@@ -514,6 +543,10 @@ public class GroupController : ControllerBase
         var result = await _groupServices.RemoveMemberAsync(id, intOrganizerId, userId);
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
+
+
+
+
 
     // PUT: api/groups/{id}/members/{userId}/role - Update member role
     [HttpPut("{id:int}/members/{userId:int}/role")]
@@ -538,13 +571,8 @@ public class GroupController : ControllerBase
         return Ok(activities);
     }
 
-    // GET: api/groups/{id}/discussions
-    //[HttpGet("{id:int}/discussions")]
-    //public async Task<IActionResult> GetDiscussions(int id)
-    //{
-    //    var discussions = await _groupServices.GetDiscussionsAsync(id);
-    //    return Ok(discussions);
-    //}
+    
+
 
     // GET: api/groups/{id}/gallery
     [HttpGet("{id:int}/gallery")]
@@ -553,6 +581,8 @@ public class GroupController : ControllerBase
         var gallery = await _groupServices.GetGalleryAsync(id);
         return Ok(gallery);
     }
+
+
 
     // DELETE: api/groups/{id}/chat/messages/{messageId} - Delete message (organizer only)
     [HttpDelete("{id:int}/chat/messages/{messageId:int}")]
@@ -569,6 +599,9 @@ public class GroupController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
+
+
+
     // POST: api/groups/{id}/members - Add member directly (organizer only)
     [HttpPost("{id:int}/members")]
     [Authorize]
@@ -584,6 +617,9 @@ public class GroupController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
+
+
+
     // GET: api/groups/{id}/members - Get all active members
     [HttpGet("{id:int}/members")]
     public async Task<IActionResult> GetGroupMembers(int id)
@@ -591,8 +627,6 @@ public class GroupController : ControllerBase
         var members = await _groupServices.GetGroupMembersAsync(id);
         return Ok(members);
     }
-
-
 
 
 
@@ -612,9 +646,6 @@ public class GroupController : ControllerBase
         var status = await _groupServices.GetJoinRequestStatusAsync(id, intUserId);
         return Ok(new { status });
     }
-
-
-
 
 
 }
@@ -659,8 +690,6 @@ public class UpdateGroupDto
 }
 public class UpdateCoverImageDto
 {
-   /// <summary>
-   /// /[StringLength(500)]
-   /// </summary>
+  
     public string? CoverImage { get; set; } // URL or base64 data URL
 }

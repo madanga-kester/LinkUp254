@@ -20,8 +20,11 @@ namespace LinkUp254.Database
         public DbSet<OtpCodes> OtpCodes { get; set; } = null!;
 
         public DbSet<GroupDiscussion> GroupDiscussions { get; set; }
+        public DbSet<GroupDiscussionReply> GroupDiscussionReplies { get; set; }
 
-        //  name for Shared.
+        public DbSet<GroupDiscussionReaction> GroupDiscussionReactions { get; set; }
+
+        //  Shared.
         public DbSet<LinkUp254.Features.Shared.UserInterest> UserInterests { get; set; } = null!;
         public DbSet<Interest> Interests { get; set; } = null!;
         public DbSet<EventInterest> EventInterests { get; set; } = null!;
@@ -158,19 +161,8 @@ namespace LinkUp254.Database
                 entity.Property(g => g.IsActive).HasDefaultValue(true);
                 entity.Property(g => g.MemberCount).HasDefaultValue(0);
 
-
-                
                 entity.Property(g => g.Location).HasMaxLength(500);
-
-                
                 entity.Property(g => g.MemberCount).HasDefaultValue(0);
-
-                entity.HasOne(g => g.Organizer)
-                    .WithMany()
-                    .HasForeignKey(g => g.OrganizerId)
-                    .OnDelete(DeleteBehavior.NoAction);
-
-
 
                 entity.HasOne(g => g.Organizer)
                     .WithMany()
@@ -196,7 +188,7 @@ namespace LinkUp254.Database
                 entity.HasOne(gm => gm.User)
                     .WithMany()
                     .HasForeignKey(gm => gm.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.NoAction); 
             });
 
             // GroupEvent entity configuration
@@ -213,41 +205,48 @@ namespace LinkUp254.Database
                     .WithMany()
                     .HasForeignKey(ge => ge.EventId)
                     .OnDelete(DeleteBehavior.Cascade);
-           
-            
-            
-            
             });
 
+            //  paths  GroupDiscussionReplies
+            modelBuilder.Entity<GroupDiscussionReply>()
+                .HasOne(r => r.Discussion)
+                .WithMany()
+                .HasForeignKey(r => r.DiscussionId)
+                .OnDelete(DeleteBehavior.Cascade); // Delete replies when discussion is deleted
 
+            modelBuilder.Entity<GroupDiscussionReply>()
+                .HasOne(r => r.Author)
+                .WithMany()
+                .HasForeignKey(r => r.AuthorId)
+                .OnDelete(DeleteBehavior.NoAction); 
 
+            //  GroupDiscussion reactions if needed
+            modelBuilder.Entity<GroupDiscussionReaction>()
+                .HasOne<GroupDiscussion>()
+                .WithMany()
+                .HasForeignKey(r => r.TargetId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_GroupDiscussionReactions_Discussion");
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+            modelBuilder.Entity<GroupDiscussionReaction>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.NoAction)
+                .HasConstraintName("FK_GroupDiscussionReactions_User");
 
             //  GROUP CHAT 
             modelBuilder.Entity<LinkUp254.Features.Groups.Models.GroupChat>(entity =>
-    {
-        entity.HasIndex(gc => gc.GroupId);
-        entity.HasIndex(gc => gc.IsActive);
-        entity.Property(gc => gc.IsActive).HasDefaultValue(true);
+            {
+                entity.HasIndex(gc => gc.GroupId);
+                entity.HasIndex(gc => gc.IsActive);
+                entity.Property(gc => gc.IsActive).HasDefaultValue(true);
 
-        entity.HasOne(gc => gc.Group)
-                .WithOne()
-                .HasForeignKey<LinkUp254.Features.Groups.Models.GroupChat>(gc => gc.GroupId)
-                .OnDelete(DeleteBehavior.Cascade);
-    });
+                entity.HasOne(gc => gc.Group)
+                        .WithOne()
+                        .HasForeignKey<LinkUp254.Features.Groups.Models.GroupChat>(gc => gc.GroupId)
+                        .OnDelete(DeleteBehavior.Cascade);
+            });
 
             //  GROUP MESSAGE 
             modelBuilder.Entity<LinkUp254.Features.Groups.Models.GroupMessage>(entity =>
@@ -265,84 +264,71 @@ namespace LinkUp254.Database
                     .HasForeignKey(gm => gm.GroupChatId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-
-
                 entity.Property(gm => gm.AttachmentUrl).HasMaxLength(500);
-
-              
-
-               
-
-
 
                 entity.HasOne(gm => gm.Sender)
                     .WithMany()
                     .HasForeignKey(gm => gm.SenderId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.NoAction); 
             });
 
             // GROUP SETTINGS 
             modelBuilder.Entity<LinkUp254.Features.Groups.Models.GroupSettings>(entity =>
-{
-    entity.HasKey(gs => gs.GroupId);
+            {
+                entity.HasKey(gs => gs.GroupId);
 
-    entity.Property(gs => gs.IsPrivate).HasDefaultValue(false);
-    entity.Property(gs => gs.AllowMemberInvites).HasDefaultValue(true);
-    entity.Property(gs => gs.AllowMemberPosts).HasDefaultValue(true);
-    entity.Property(gs => gs.ModerateMessages).HasDefaultValue(false);
-    entity.Property(gs => gs.AllowLinks).HasDefaultValue(true);
-    entity.Property(gs => gs.AllowMedia).HasDefaultValue(true);
+                entity.Property(gs => gs.IsPrivate).HasDefaultValue(false);
+                entity.Property(gs => gs.AllowMemberInvites).HasDefaultValue(true);
+                entity.Property(gs => gs.AllowMemberPosts).HasDefaultValue(true);
+                entity.Property(gs => gs.ModerateMessages).HasDefaultValue(false);
+                entity.Property(gs => gs.AllowLinks).HasDefaultValue(true);
+                entity.Property(gs => gs.AllowMedia).HasDefaultValue(true);
 
-    entity.HasOne(gs => gs.Group)
-        .WithOne()
-        .HasForeignKey<LinkUp254.Features.Groups.Models.GroupSettings>(gs => gs.GroupId)
-        .OnDelete(DeleteBehavior.Cascade);
-});
+                entity.HasOne(gs => gs.Group)
+                    .WithOne()
+                    .HasForeignKey<LinkUp254.Features.Groups.Models.GroupSettings>(gs => gs.GroupId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-// GROUP RULE 
-modelBuilder.Entity<LinkUp254.Features.Groups.Models.GroupRule>(entity =>
-{
-    entity.HasIndex(gr => gr.GroupId);
-    entity.HasIndex(gr => gr.Order);
-    entity.HasIndex(gr => gr.IsActive);
+            // GROUP RULE 
+            modelBuilder.Entity<LinkUp254.Features.Groups.Models.GroupRule>(entity =>
+            {
+                entity.HasIndex(gr => gr.GroupId);
+                entity.HasIndex(gr => gr.Order);
+                entity.HasIndex(gr => gr.IsActive);
 
-    entity.Property(gr => gr.Title).IsRequired().HasMaxLength(500);
-    entity.Property(gr => gr.Description).HasMaxLength(2000);
-    entity.Property(gr => gr.IsActive).HasDefaultValue(true);
+                entity.Property(gr => gr.Title).IsRequired().HasMaxLength(500);
+                entity.Property(gr => gr.Description).HasMaxLength(2000);
+                entity.Property(gr => gr.IsActive).HasDefaultValue(true);
 
-    entity.HasOne(gr => gr.Group)
-        .WithMany(g => g.GroupRules)  
-        .HasForeignKey(gr => gr.GroupId)
-        .OnDelete(DeleteBehavior.Cascade);
-});
+                entity.HasOne(gr => gr.Group)
+                    .WithMany(g => g.GroupRules)
+                    .HasForeignKey(gr => gr.GroupId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-//  GROUP JOIN REQUEST 
-modelBuilder.Entity<LinkUp254.Features.Groups.Models.GroupJoinRequest>(entity =>
-{
-    entity.HasIndex(gjr => new { gjr.GroupId, gjr.UserId }).IsUnique();
-    entity.HasIndex(gjr => gjr.Status);
-    entity.HasIndex(gjr => gjr.RequestedAt);
+            //  GROUP JOIN REQUEST 
+            modelBuilder.Entity<LinkUp254.Features.Groups.Models.GroupJoinRequest>(entity =>
+            {
+                entity.HasIndex(gjr => new { gjr.GroupId, gjr.UserId }).IsUnique();
+                entity.HasIndex(gjr => gjr.Status);
+                entity.HasIndex(gjr => gjr.RequestedAt);
 
-    entity.Property(gjr => gjr.Status).HasMaxLength(50).HasDefaultValue("pending");
-    entity.Property(gjr => gjr.Message).HasMaxLength(500);
-    entity.Property(gjr => gjr.ReviewNotes).HasMaxLength(500);
+                entity.Property(gjr => gjr.Status).HasMaxLength(50).HasDefaultValue("pending");
+                entity.Property(gjr => gjr.Message).HasMaxLength(500);
+                entity.Property(gjr => gjr.ReviewNotes).HasMaxLength(500);
 
-    entity.HasOne(gjr => gjr.Group)
-        .WithMany()
-        .HasForeignKey(gjr => gjr.GroupId)
-        .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(gjr => gjr.Group)
+                    .WithMany()
+                    .HasForeignKey(gjr => gjr.GroupId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-    entity.HasOne(gjr => gjr.User)
-        .WithMany()
-        .HasForeignKey(gjr => gjr.UserId)
-        .OnDelete(DeleteBehavior.Cascade);
-});
-
-
-
-
-        }
-
+                entity.HasOne(gjr => gjr.User)
+                    .WithMany()
+                    .HasForeignKey(gjr => gjr.UserId)
+                    .OnDelete(DeleteBehavior.NoAction); 
+            });
+        } 
 
         //  AUTO TIMESTAMPING 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

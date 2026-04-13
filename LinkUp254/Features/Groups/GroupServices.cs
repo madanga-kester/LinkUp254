@@ -1,18 +1,19 @@
-﻿using LinkUp254.Database;
+﻿
+
+using LinkUp254.Database;
 using LinkUp254.Features.Auth;
-using LinkUp254.Features.Groups.Models;
-
-using GroupModel = LinkUp254.Features.Groups.Models.Group;
-
-using LinkUp254.Features.Shared;
 using LinkUp254.Features.Groups.DTOs;
+using LinkUp254.Features.Groups.Models;
+using LinkUp254.Features.Shared;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using GroupEventModel = LinkUp254.Features.Groups.Models.GroupEvent;
 using GroupMemberModel = LinkUp254.Features.Groups.Models.GroupMember;
+using GroupModel = LinkUp254.Features.Groups.Models.Group;
 
 
 
@@ -145,7 +146,9 @@ public class GroupServices
 
 
 
-    //join a group
+    //joining a group
+
+
     public async Task<(bool IsSuccess, string Message, bool IsPending)> JoinGroupAsync(int groupId, int userId)
     {
         // 1. Get group
@@ -168,6 +171,7 @@ public class GroupServices
 
         if (!isPrivate)
         {
+
             //  PUBLIC GROUP: Join directly
             var member = new GroupMemberModel
             {
@@ -224,7 +228,7 @@ public class GroupServices
                 }
             }
 
-            // Case: New Request
+            // if its iS A New Request
             var newRequest = new GroupJoinRequest
             {
                 GroupId = groupId,
@@ -242,7 +246,7 @@ public class GroupServices
 
 
 
-    // Getting exact join status for frontend
+    // Getting exact join status for the frontend
     public async Task<string> GetJoinRequestStatusAsync(int groupId, int userId)
     {
         // 1. Check if member
@@ -268,8 +272,7 @@ public class GroupServices
 
 
 
-
-    //      Leave a group
+    // Leave a group
 
 
     public async Task<bool> LeaveGroupAsync(int groupId, int userId)
@@ -319,7 +322,7 @@ public class GroupServices
 
 
 
-    //         Messaging
+    // Messaging
 
     public async Task<AuthResult> SendMessageAsync(int groupId, int userId, string content)
     {
@@ -389,7 +392,7 @@ public class GroupServices
     }
 
 
-    //         Update Group Settings (for the Organizer)
+    //    Update Group Settings (for the Organizer)
 
     public async Task<AuthResult> UpdateSettingsAsync(int groupId, int organizerId, UpdateGroupSettingsDto dto)
     {
@@ -429,10 +432,6 @@ public class GroupServices
 
 
 
-
-
-
-
     public async Task<AuthResult> AddRuleAsync(int groupId, int organizerId, CreateGroupRuleDto dto)
     {
         var group = await _context.Groups.FindAsync(groupId);
@@ -458,13 +457,11 @@ public class GroupServices
         return AuthResult.Success("Rule added.");
     }
 
-    //public async Task<List<GroupRule>> GetGroupRulesAsync(int groupId)
-    //{
-    //    return await _context.GroupRules
-    //        .Where(gr => gr.GroupId == groupId && gr.IsActive)
-    //        .OrderBy(gr => gr.Order)
-    //        .ToListAsync();
-    //}
+    
+
+
+
+
     public async Task<List<GroupRule>> GetGroupRulesAsync(int groupId)
     {
         return await _context.GroupRules
@@ -511,7 +508,7 @@ public class GroupServices
         return AuthResult.Success("Discussion created.");
     }
 
-    //  Get discussions for a group 
+    
     public async Task<List<DiscussionItemDto>> GetDiscussionsAsync(int groupId)
     {
         var discussions = await _context.GroupDiscussions
@@ -536,16 +533,252 @@ public class GroupServices
                 ProfilePicture = d.Author.ProfilePicture
             },
             ReplyCount = d.ReplyCount,
-            ViewCount = d.ViewCount,
             IsPinned = d.IsPinned,
             IsLocked = d.IsLocked,
             CreatedAt = d.CreatedAt,
-            UpdatedAt = d.UpdatedAt,
-            Trending = d.ViewCount > 100 || d.ReplyCount > 10,
-            SourceMessageId = d.SourceMessageId
+            Trending = d.ReplyCount > 5 || d.IsPinned
         }).ToList();
     }
 
+    
+
+
+
+    public async Task<DiscussionDetailDto?> GetDiscussionWithRepliesAsync(int discussionId, int userId)
+    {
+        var discussion = await _context.GroupDiscussions
+            .Include(d => d.Group)
+            .Include(d => d.Author)
+            .FirstOrDefaultAsync(d => d.Id == discussionId && d.IsActive);
+
+        if (discussion == null) return null;
+        if (discussion.Group == null) return null; 
+
+        if (discussion.Group.IsPrivate)
+        {
+            var isMember = await _context.GroupMembers.AnyAsync(gm =>
+                gm.GroupId == discussion.GroupId && gm.UserId == userId && gm.IsActive);
+            if (!isMember) return null;
+        }
+
+        var replies = await _context.GroupDiscussionReplies
+            .Where(r => r.DiscussionId == discussionId && r.IsActive)
+            .Include(r => r.Author)
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync();
+
+        discussion.ViewCount++;
+        discussion.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        var discussionReaction = await GetReactionDataAsync("Discussion", discussionId, userId);
+
+        
+
+        var replyDtos = new List<ReplyDto>();
+        foreach (var r in replies)
+        {
+            var replyReaction = await GetReactionDataAsync("Reply", r.Id, userId);
+            replyDtos.Add(new ReplyDto
+            {
+                Id = r.Id,
+                AuthorId = r.AuthorId,
+                Author = new UserDto
+                {
+                    Id = r.Author?.Id ?? 0,
+                    FirstName = r.Author?.FirstName ?? "Deleted",
+                    LastName = r.Author?.LastName ?? "User",
+                    ProfilePicture = r.Author?.ProfilePicture
+                },
+                Content = r.Content ?? "",
+                ParentReplyId = r.ParentReplyId,
+                CreatedAt = r.CreatedAt,
+                UpvoteCount = replyReaction.Count,
+                UserReaction = replyReaction.UserReaction
+            });
+        }
+
+        return new DiscussionDetailDto
+        {
+            Id = discussion.Id,
+            GroupId = discussion.GroupId,
+            AuthorId = discussion.AuthorId,
+            Author = new UserDto
+            {
+                Id = discussion.Author?.Id ?? 0,
+                FirstName = discussion.Author?.FirstName ?? "Deleted",
+                LastName = discussion.Author?.LastName ?? "User",
+                ProfilePicture = discussion.Author?.ProfilePicture
+            },
+            Title = discussion.Title ?? "",
+            Content = discussion.Content ?? "",
+            IsPinned = discussion.IsPinned,
+            IsLocked = discussion.IsLocked,
+            ReplyCount = discussion.ReplyCount,
+            UpvoteCount = discussionReaction.Count,
+            UserReaction = discussionReaction.UserReaction,
+            CreatedAt = discussion.CreatedAt,
+            Replies = replyDtos 
+        };
+    }
+
+
+
+
+
+    //  Toggle reaction on discussion or reply 
+    public async Task<AuthResult> ToggleReactionAsync(string targetType, int targetId, int userId, string reactionType)
+    {
+        try
+        {
+           
+            if (targetType != "Discussion" && targetType != "Reply")
+                return AuthResult.Failure($"Invalid target type: {targetType}");
+
+            
+            if (targetType == "Reply")
+            {
+                var reply = await _context.GroupDiscussionReplies
+                    .FirstOrDefaultAsync(r => r.Id == targetId && r.IsActive);
+
+                if (reply == null)
+                    return AuthResult.Failure("Reply not found or inactive.");
+
+                
+            }
+            
+            else if (targetType == "Discussion")
+            {
+                var discussion = await _context.GroupDiscussions
+                    .FirstOrDefaultAsync(d => d.Id == targetId && d.IsActive);
+
+                if (discussion == null)
+                    return AuthResult.Failure("Discussion not found or inactive.");
+            }
+
+            
+            var existing = await _context.GroupDiscussionReactions
+                .FirstOrDefaultAsync(r =>
+                    r.TargetType == targetType &&
+                    r.TargetId == targetId &&
+                    r.UserId == userId &&
+                    r.ReactionType == reactionType);
+
+            if (existing != null)
+            {
+                // Remove existing reaction (toggle off)
+                _context.GroupDiscussionReactions.Remove(existing);
+            }
+            else
+            {
+                // Add new reaction
+                var reaction = new GroupDiscussionReaction
+                {
+                    TargetType = targetType,
+                    TargetId = targetId,
+                    UserId = userId,
+                    ReactionType = reactionType,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.GroupDiscussionReactions.Add(reaction);
+            }
+
+            await _context.SaveChangesAsync();
+            return AuthResult.Success("Reaction updated.");
+        }
+        catch (Exception ex)
+        {
+            
+            System.Diagnostics.Debug.WriteLine($"[ERROR] ToggleReactionAsync crashed: {ex.Message}\n{ex.StackTrace}");
+            return AuthResult.Failure($"Server error: {ex.Message}");
+        }
+    }
+
+
+
+
+
+    private async Task<(int Count, string? UserReaction)> GetReactionDataAsync(string targetType, int targetId, int userId)
+    {
+        try
+        {
+            var count = await _context.GroupDiscussionReactions
+                .CountAsync(r => r.TargetType == targetType && r.TargetId == targetId && r.ReactionType == "upvote");
+
+            var userReaction = await _context.GroupDiscussionReactions
+                .Where(r => r.TargetType == targetType && r.TargetId == targetId && r.UserId == userId)
+                .Select(r => r.ReactionType)
+                .FirstOrDefaultAsync();
+
+            return (count, userReaction == "upvote" ? "upvoted" : (userReaction ?? null));
+        }
+        catch
+        {
+           
+            return (0, null);
+        }
+    }
+
+    // Delete a reply (author or organizer only)
+    public async Task<AuthResult> DeleteReplyAsync(int replyId, int userId)
+    {
+        var reply = await _context.GroupDiscussionReplies
+            .Include(r => r.Discussion)
+            .FirstOrDefaultAsync(r => r.Id == replyId && r.IsActive);
+
+        if (reply == null)
+            return AuthResult.Failure("Reply not found.");
+
+        if (reply.Discussion == null || !reply.Discussion.IsActive)
+            return AuthResult.Failure("Discussion not found or inactive.");
+
+        var isAuthor = reply.AuthorId == userId;
+
+        var isOrganizer = reply.Discussion?.Group?.OrganizerId == userId;
+
+        if (!isAuthor && !isOrganizer)
+            return AuthResult.Failure("Permission denied.");
+
+        reply.IsActive = false;
+        reply.Discussion.ReplyCount = Math.Max(0, reply.Discussion.ReplyCount - 1);
+        reply.Discussion.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        return AuthResult.Success("Reply deleted.");
+    }
+
+    //  Add a reply to discussion 
+    public async Task<AuthResult> AddReplyAsync(int discussionId, int userId, CreateReplyDto dto)
+    {
+        var discussion = await _context.GroupDiscussions
+            .Include(d => d.Group)
+            .FirstOrDefaultAsync(d => d.Id == discussionId && d.IsActive);
+
+        if (discussion == null)
+            return AuthResult.Failure("Discussion not found.");
+        if (discussion.IsLocked)
+            return AuthResult.Failure("This discussion is locked.");
+
+        var isMember = await _context.GroupMembers
+            .AnyAsync(gm => gm.GroupId == discussion.GroupId && gm.UserId == userId && gm.IsActive);
+        if (!isMember)
+            return AuthResult.Failure("You must be a member to reply.");
+
+        var reply = new GroupDiscussionReply
+        {
+            DiscussionId = discussionId,
+            AuthorId = userId,
+            Content = dto.Content.Trim(),
+            ParentReplyId = dto.ParentReplyId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.GroupDiscussionReplies.Add(reply);
+        discussion.ReplyCount++;
+        discussion.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return AuthResult.Success("Reply posted.");
+    }
 
 
     // request to join 
@@ -601,7 +834,7 @@ public class GroupServices
             .FirstOrDefaultAsync(g => g.Id == groupId);
 
         if (group == null || group.OrganizerId != organizerId)
-            return new List<PendingRequestDto>(); // Return empty,
+            return new List<PendingRequestDto>(); 
 
 
         // Fetch ONLY pending requests for this group
@@ -669,7 +902,7 @@ public class GroupServices
             }
             else
             {
-                // Add new member
+                // Add a new member
                 var member = new GroupMemberModel
                 {
                     GroupId = request.GroupId,
@@ -681,7 +914,7 @@ public class GroupServices
                 _context.GroupMembers.Add(member);
             }
 
-            //  Update group member count only if not already counted
+            //  Update group member count 
             if (request.Group.MemberCount < (await _context.GroupMembers.CountAsync(gm => gm.GroupId == request.GroupId && gm.IsActive)))
             {
                 request.Group.MemberCount++;
@@ -692,22 +925,6 @@ public class GroupServices
         await _context.SaveChangesAsync();
         return AuthResult.Success(approve ? "Member approved and added." : "Request rejected.");
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -802,30 +1019,6 @@ public class GroupServices
 
         return activities.OrderByDescending(a => a.CreatedAt).Take(20).ToList();
     }
-
-
-
-    //  Discussions 
-    //public async Task<List<DiscussionItemDto>> GetDiscussionsAsync(int groupId)
-    //{
-    //    var discussions = await _context.GroupMessages
-    //        .Where(m => m.GroupChat.GroupId == groupId && !m.IsDeleted)
-    //        .GroupBy(m => m.Content.Length > 50 ? m.Content.Substring(0, 50) : m.Content)
-    //        .Select(g => new DiscussionItemDto
-    //        {
-    //            Id = g.Key.GetHashCode(),
-    //            Title = g.Key + "...",
-    //            Replies = g.Count(),
-    //            LastActivity = g.Max(m => m.SentAt),
-    //            Trending = g.Count() > 5
-    //        })
-    //        .OrderByDescending(d => d.Replies)
-    //        .Take(10)
-    //        .ToListAsync();
-
-    //    return discussions;
-    //}
-
 
 
 
@@ -935,9 +1128,6 @@ public class GroupServices
 
 
 
-
-
-
     public async Task<(bool IsSuccess, string? Message, GroupModel? Group)> UpdateGroupAsync(
     int groupId,
     int organizerId,
@@ -983,11 +1173,8 @@ public class GroupServices
             .Include(g => g.GroupRules)
             .FirstOrDefaultAsync(g => g.Id == groupId);
 
-        return (true, null, updatedGroup); 
+        return (true, null, updatedGroup!); 
     }
-
-
-
 
 
 
@@ -1027,7 +1214,9 @@ public class GroupServices
         }
         catch (Microsoft.Data.SqlClient.SqlException sqlEx)
         {
-            //  Log the  SQL error
+           
+            
+            //  Log   SQL error
             System.Diagnostics.Debug.WriteLine($"[SQL ERROR] UpdateCoverImageAsync: {sqlEx.Message}\nNumber: {sqlEx.Number}");
 
            
@@ -1044,12 +1233,6 @@ public class GroupServices
             return (false, $"Unexpected error: {ex.Message}", null);
         }
     }
-
-
-
-
-
-
 
 
 
@@ -1084,13 +1267,6 @@ public class GroupServices
             .OrderByDescending(g => g.CreatedAt)
             .ToListAsync();
     }
-
-
-
-
-
-
-
 
 
 
@@ -1160,7 +1336,41 @@ public class GroupMemberResponseDto
 }
 
 
+public class CreateReplyDto
+{
+    [Required, StringLength(3000)]
+    public string Content { get; set; } = string.Empty;
 
+    public int? ParentReplyId { get; set; } // Optional: reply to a reply
+}
+public class ReplyDto
+{
+    public int Id { get; set; }
+    public int AuthorId { get; set; }
+    public UserDto Author { get; set; } = new UserDto();
+    public string Content { get; set; } = string.Empty;
+    public int? ParentReplyId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int UpvoteCount { get; set; }
+    public string? UserReaction { get; set; } // Current user's reaction
+}
+
+public class DiscussionDetailDto
+{
+    public int Id { get; set; }
+    public int GroupId { get; set; }
+    public int AuthorId { get; set; }
+    public UserDto Author { get; set; } = new UserDto();
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public bool IsPinned { get; set; }
+    public bool IsLocked { get; set; }
+    public int ReplyCount { get; set; }
+    public int UpvoteCount { get; set; }
+    public string? UserReaction { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public List<ReplyDto> Replies { get; set; } = new List<ReplyDto>();
+}
 
 
 
