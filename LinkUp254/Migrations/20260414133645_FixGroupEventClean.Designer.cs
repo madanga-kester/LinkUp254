@@ -4,6 +4,7 @@ using LinkUp254.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LinkUp254.Migrations
 {
     [DbContext(typeof(LinkUpContext))]
-    partial class LinkUpContextModelSnapshot : ModelSnapshot
+    [Migration("20260414133645_FixGroupEventClean")]
+    partial class FixGroupEventClean
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,6 +156,9 @@ namespace LinkUp254.Migrations
                     b.Property<int?>("UserId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("UserId1")
+                        .HasColumnType("int");
+
                     b.Property<int>("ViewCount")
                         .HasColumnType("int");
 
@@ -170,6 +176,8 @@ namespace LinkUp254.Migrations
                     b.HasIndex("StartTime");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1");
 
                     b.HasIndex("IsActive", "IsPublished");
 
@@ -1044,14 +1052,18 @@ namespace LinkUp254.Migrations
             modelBuilder.Entity("LinkUp254.Features.Events.models.Event", b =>
                 {
                     b.HasOne("LinkUp254.Features.Shared.User", "Organizer")
-                        .WithMany("EventsHosted")
+                        .WithMany()
                         .HasForeignKey("OrganizerId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("LinkUp254.Features.Shared.User", null)
-                        .WithMany("HostedEvents")
+                        .WithMany("EventsHosted")
                         .HasForeignKey("UserId");
+
+                    b.HasOne("LinkUp254.Features.Shared.User", null)
+                        .WithMany("HostedEvents")
+                        .HasForeignKey("UserId1");
 
                     b.Navigation("Organizer");
                 });
@@ -1207,7 +1219,7 @@ namespace LinkUp254.Migrations
             modelBuilder.Entity("LinkUp254.Features.Groups.Models.GroupEvent", b =>
                 {
                     b.HasOne("LinkUp254.Features.Events.models.Event", "Event")
-                        .WithMany("GroupEvents")
+                        .WithMany()
                         .HasForeignKey("EventId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1334,8 +1346,6 @@ namespace LinkUp254.Migrations
                     b.Navigation("EventAttendees");
 
                     b.Navigation("EventInterests");
-
-                    b.Navigation("GroupEvents");
 
                     b.Navigation("Tickets");
                 });

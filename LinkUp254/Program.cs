@@ -29,7 +29,6 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<AuthServices>();
 builder.Services.AddScoped<AdminAuthServices>();
 builder.Services.AddScoped<LinkUp254.Features.Events.EventServices>();
-
 builder.Services.AddScoped<LinkUp254.Features.Groups.GroupServices>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -61,7 +60,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "http://127.0.0.1:4200", "http://localhost:4200")
+        policy.WithOrigins("http://localhost:4200", "http://127.0.0.1:4200")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -70,13 +69,30 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<LinkUpContext>();
-    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
+    var services = scope.ServiceProvider;
+    try
+    {
+        var dbContext = services.GetRequiredService<LinkUpContext>();
 
-    dbContext.Database.EnsureCreated();
-    await SeedData.InitializeAsync(dbContext, passwordHasher);
+ 
+        if (app.Environment.IsDevelopment())
+        {
+            dbContext.Database.Migrate();
+        }
+
+        // Seed data after migrations are applied
+        var passwordHasher = services.GetRequiredService<IPasswordHasher<User>>();
+        await SeedData.InitializeAsync(dbContext, passwordHasher);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while initializing the database.");
+        throw;
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -84,6 +100,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
 app.UseAuthentication();

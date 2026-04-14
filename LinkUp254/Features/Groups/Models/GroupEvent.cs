@@ -1,6 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
-using LinkUp254.Features.Events.models;
+using LinkUp254.Features.Events.models      ;
 
 namespace LinkUp254.Features.Groups.Models;
 
@@ -13,7 +13,9 @@ public class GroupEvent
     public Group Group { get; set; } = null!;
 
     public int EventId { get; set; }
-    public Event Event { get; set; } = null!;
+    public Event? Event { get; set; } = null!;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+
 }

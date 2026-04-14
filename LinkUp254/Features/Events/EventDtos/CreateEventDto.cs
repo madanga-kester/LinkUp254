@@ -25,7 +25,9 @@ public class CreateEventDto
 
     public DateTime? EndDate { get; set; }
 
-    public decimal? Price { get; set; }  
+    public decimal? Price { get; set; }
+
+    public int? GroupId { get; set; }
 
     [StringLength(500)]
     public string? ImageUrl { get; set; }  
@@ -36,4 +38,10 @@ public class CreateEventDto
 
     // Interest IDs to associate with event
     public List<int>? InterestIds { get; set; }
+
+    // Visibility setting (0=Public, 1=GroupOnly, 2=Private)
+    public int? Visibility { get; set; }
+
+    // : Explicit IsFree flag (in case Price=0 but not free)
+    public bool? IsFree { get; set; }
 }

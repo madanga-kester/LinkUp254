@@ -30,38 +30,59 @@ public class GroupController : ControllerBase
         return Ok(groups);
     }
 
-    // GET: api/groups/{id} - Single group details 
+    
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetGroupById(int id)
     {
-        var group = await _groupServices.GetGroupByIdAsync(id);
-        if (group == null) return NotFound(new { message = "Group not found" });
-
         
-        var response = new
+        int? currentUserId = null;
+
+        if (User.Identity?.IsAuthenticated == true)
         {
-            group.Id,
-            group.Name,
-            group.Description,
-            group.CoverImage,
-            group.OrganizerId,
-            group.Organizer,
-            group.City,
-            group.Country,
-            group.MemberCount,
-            group.IsActive,
-            group.IsPrivate,
-            group.CreatedAt,
-            group.UpdatedAt,
-            group.GroupMembers,
-            group.GroupEvents,
-            group.Settings,
-            group.GroupRules,
-            group.Chat
+            var claimNames = new[] {
+            ClaimTypes.NameIdentifier,
+            "sub",
+            "nameid",
+            "id",
+            "userId",
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
         };
 
-        return Ok(response);
+            foreach (var claimName in claimNames)
+            {
+                var claim = User.FindFirst(claimName);
+                if (claim != null && int.TryParse(claim.Value, out var userId))
+                {
+                    currentUserId = userId;
+                    Console.WriteLine($"Auth: Extracted userId={userId} from claim '{claimName}'");
+                    break;
+                }
+            }
+
+            if (currentUserId == null)
+            {
+                Console.WriteLine($" Auth: No valid userId claim found. Available claims: [{string.Join(", ", User.Claims.Select(c => c.Type))}]");
+            }
+        }
+        else
+        {
+            Console.WriteLine($" Auth: Request is anonymous (no valid JWT)");
+        }
+
+        // Fetch group with visibility filtering
+        var group = await _groupServices.GetGroupByIdAsync(id, currentUserId);
+        if (group == null)
+            return NotFound(new { message = "Group not found" });
+
+        // DEBUG: Log what we're about to send
+        Console.WriteLine($" Controller: Sending group '{group.Name}' with {group.GroupEvents?.Count ?? 0} events (currentUserId={currentUserId})");
+
+        //  Return the group entity directly - EF Core already loaded navigation properties
+        return Ok(group);
     }
+
+
+
 
     // GET: api/groups/my-groups - Groups users belongs to
     [HttpGet("my-groups")]

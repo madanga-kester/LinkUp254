@@ -1,4 +1,4 @@
-using LinkUp254.Database;
+﻿using LinkUp254.Database;
 using LinkUp254.Features.Events.DTOs;
 using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Shared;
@@ -9,7 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
+using LinkUp254.Features.Groups.Models; 
 namespace LinkUp254.Features.Events;
 
 public class EventServices
@@ -25,15 +25,53 @@ public class EventServices
         _logger = logger;
     }
 
-    // GET: All events with filters
-    public async Task<PagedResult<Event>> GetEventsAsync(EventFilterDto filters)
+
+    
+
+    
+    private IQueryable<Event> ApplyVisibilityFilter(IQueryable<Event> query, int? userId)
+    {
+        
+        var publicEvents = query.Where(e => e.Visibility == 0);
+
+ 
+        if (!userId.HasValue)
+            return publicEvents;
+
+        var userGroupIds = _context.GroupMembers
+            .Where(gm => gm.UserId == userId.Value && gm.IsActive)
+            .Select(gm => gm.GroupId);
+
+        var groupEvents = query
+            .Where(e => e.Visibility == 1
+                     && e.GroupEvents.Any(ge => userGroupIds.Contains(ge.GroupId)));
+
+        var privateEvents = query
+            .Where(e => e.Visibility == 2 && e.OrganizerId == userId.Value);
+
+       
+        return publicEvents
+            .Concat(groupEvents)
+            .Concat(privateEvents)
+            .Distinct();
+    }
+
+
+
+
+
+
+
+    // GET: All events with filters + visibility awareness
+    public async Task<PagedResult<Event>> GetEventsAsync(EventFilterDto filters, int? userId = null)
     {
         try
         {
-            // FIX: Removed hardcoded future-only filter so ALL published events show
             var query = _context.Events
                 .Where(e => e.IsActive && e.IsPublished)
                 .AsQueryable();
+
+            query = ApplyVisibilityFilter(query, userId);
 
             // Search by title, description, location, city, country
             if (!string.IsNullOrEmpty(filters.Search))
@@ -56,7 +94,7 @@ public class EventServices
             if (!string.IsNullOrEmpty(filters.Location))
                 query = query.Where(e => EF.Functions.Like(e.Location, $"%{filters.Location}%"));
 
-            // Filter by date range (only if user explicitly provides dates)
+            // Filter by date range
             if (filters.StartDate.HasValue)
                 query = query.Where(e => e.StartTime >= filters.StartDate.Value);
             if (filters.EndDate.HasValue)
@@ -106,39 +144,50 @@ public class EventServices
         }
     }
 
-    // GET: Personalized events for a user (interest-based + location)
+
+
+
+
+
+
+
+
+
+
+    // GET: Personalized events for a user 
     public async Task<PagedResult<Event>> GetPersonalizedEventsAsync(string userId, EventFilterDto filters)
     {
         try
         {
+            int userIdInt = int.Parse(userId);
+
             var query = _context.Events
                 .Where(e => e.IsActive && e.IsPublished && e.StartTime >= DateTime.UtcNow.Date)
                 .AsQueryable();
 
-            // Get user's interests
+            
+            query = ApplyVisibilityFilter(query, userIdInt);
+
             var userInterestIds = await _context.UserInterests
-                .Where(ui => ui.UserId == int.Parse(userId) && ui.IsActive)
+                .Where(ui => ui.UserId == userIdInt && ui.IsActive)
                 .Select(ui => ui.InterestId)
                 .ToListAsync();
 
-            // Filter by interests (if user has any)
             if (userInterestIds.Any())
             {
                 query = query.Where(e =>
                     e.EventInterests.Any(ei => userInterestIds.Contains(ei.InterestId))
                 );
 
-                // Relevance boost score for interest matches
+            
                 query = query.OrderByDescending(e =>
                     e.EventInterests.Count(ei => userInterestIds.Contains(ei.InterestId))
                 );
             }
 
-            // Filter by location (prioritize user's city/country if available)
-            var userProfile = await _context.Users.FirstOrDefaultAsync(u => u.Id == int.Parse(userId));
+            var userProfile = await _context.Users.FirstOrDefaultAsync(u => u.Id == userIdInt);
             if (!string.IsNullOrEmpty(userProfile?.City))
             {
-                // Show local events first, then others
                 query = query.OrderByDescending(e => e.City == userProfile.City)
                             .ThenByDescending(e => e.Country == userProfile.Country);
             }
@@ -148,13 +197,12 @@ public class EventServices
             if (!string.IsNullOrEmpty(filters.Country))
                 query = query.Where(e => EF.Functions.Like(e.Country, $"%{filters.Country}%"));
 
-            // Filter by date range
+           
             if (filters.StartDate.HasValue)
                 query = query.Where(e => e.StartTime >= filters.StartDate.Value);
             if (filters.EndDate.HasValue)
                 query = query.Where(e => e.StartTime <= filters.EndDate.Value);
 
-            // Filter by price
             if (filters.IsFreeOnly == true)
                 query = query.Where(e => e.IsFree);
 
@@ -189,19 +237,26 @@ public class EventServices
         }
     }
 
-    // GET: Trending events (by engagement metrics)
-    public async Task<PagedResult<Event>> GetTrendingEventsAsync(EventFilterDto filters)
+
+
+
+
+    // GET: Trending events (by engagement metrics) + visibility awareness
+    public async Task<PagedResult<Event>> GetTrendingEventsAsync(EventFilterDto filters, int? userId = null)
     {
         try
         {
             var query = _context.Events
                 .Where(e => e.IsActive && e.IsPublished && e.StartTime >= DateTime.UtcNow.Date)
-                .OrderByDescending(e => e.AttendeeCount)
-                .ThenByDescending(e => e.LikeCount)
-                .ThenByDescending(e => e.ViewCount)
                 .AsQueryable();
 
-            // Apply optional filters
+            query = ApplyVisibilityFilter(query, userId);
+
+            query = query
+                .OrderByDescending(e => e.AttendeeCount)
+                .ThenByDescending(e => e.LikeCount)
+                .ThenByDescending(e => e.ViewCount);
+
             if (!string.IsNullOrEmpty(filters.City))
                 query = query.Where(e => EF.Functions.Like(e.City, $"%{filters.City}%"));
             if (!string.IsNullOrEmpty(filters.Country))
@@ -233,17 +288,30 @@ public class EventServices
         }
     }
 
-    // GET: Single event by ID
-    public async Task<Event?> GetEventByIdAsync(int eventId)
+
+
+
+
+
+
+
+
+    // GET: Single event by ID + visibility check
+    public async Task<Event?> GetEventByIdAsync(int eventId, int? userId = null)
     {
         try
         {
-            return await _context.Events
-                .Include(e => e.EventInterests)
-                    .ThenInclude(ei => ei.Interest)
+            var baseQuery = _context.Events
+                .Include(e => e.EventInterests).ThenInclude(ei => ei.Interest)
                 .Include(e => e.Organizer)
                 .Include(e => e.Tickets)
-                .FirstOrDefaultAsync(e => e.Id == eventId && e.IsActive && e.IsPublished);
+                .Where(e => e.Id == eventId && e.IsActive && e.IsPublished)
+                .AsQueryable();
+
+            //  Apply visibility filtering
+            var filtered = ApplyVisibilityFilter(baseQuery, userId);
+
+            return await filtered.FirstOrDefaultAsync();
         }
         catch (Exception ex)
         {
@@ -270,7 +338,15 @@ public class EventServices
         }
     }
 
-    // POST: Create a new event
+
+
+
+
+
+
+
+
+    
     public async Task<AuthResult> CreateEventAsync(CreateEventDto dto, int organizerId)
     {
         try
@@ -279,9 +355,9 @@ public class EventServices
             if (organizer == null)
                 return AuthResult.Failure("Organizer not found.");
 
+            // 1. Create the event
             var newEvent = new Event(
                 title: dto.Title,
-               
                 description: dto.Description ?? "",
                 city: dto.City ?? "",
                 country: dto.Country ?? "",
@@ -294,13 +370,52 @@ public class EventServices
                 Price = dto.Price,
                 CoverImage = dto.ImageUrl,
                 MaxAttendees = dto.MaxAttendees,
-                IsPublished = dto.IsPublished ?? true
+                IsPublished = dto.IsPublished ?? true,
+                Visibility = dto.Visibility ?? 0   // 0=Public, 1=GroupOnly, 2=Private
             };
 
-            await _context.Events.AddAsync(newEvent);
+            _context.Events.Add(newEvent);
             await _context.SaveChangesAsync();
 
-            // Associate interests if provided
+            if (dto.GroupId.HasValue)
+            {
+                int groupId = dto.GroupId.Value;
+
+               
+                bool hasPermission = await _context.GroupMembers
+                    .AnyAsync(gm => gm.GroupId == groupId
+                                 && gm.UserId == organizerId
+                                 && gm.IsActive
+                                 && (gm.Role == "admin" || gm.Role == "moderator"));
+
+                // Fallback for main organizer
+                if (!hasPermission)
+                {
+                    hasPermission = await _context.Groups
+                        .AnyAsync(g => g.Id == groupId && g.OrganizerId == organizerId);
+                }
+
+                if (!hasPermission)
+                {
+                    _context.Events.Remove(newEvent);
+                    await _context.SaveChangesAsync();
+                    return AuthResult.Failure("You do not have permission to create events in this group.");
+                }
+
+                var groupEvent = new GroupEvent
+                {
+                    GroupId = groupId,
+                    EventId = newEvent.Id,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.GroupEvents.Add(groupEvent);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Event {EventId} linked to group {GroupId}", newEvent.Id, groupId);
+            }
+
+            // 3. Associate interests if provided
             if (dto.InterestIds?.Any() == true)
             {
                 foreach (var interestId in dto.InterestIds)
@@ -314,17 +429,39 @@ public class EventServices
                 await _context.SaveChangesAsync();
             }
 
-            _logger.LogInformation("Event created: {EventTitle} (ID: {EventId}) by organizer {OrganizerId}",
+            _logger.LogInformation("Event created successfully: {Title} (ID: {Id}) by user {UserId}",
                 dto.Title, newEvent.Id, organizerId);
 
             return AuthResult.Success("Event created successfully.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "CreateEventAsync failed for organizer {OrganizerId}", organizerId);
-            return AuthResult.Failure("Failed to create event.");
+            _logger.LogError(ex, "CreateEventAsync failed for user {OrganizerId}", organizerId);
+            return AuthResult.Failure("Failed to create event. Please try again.");
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // PUT: Update event
     public async Task<AuthResult> UpdateEventAsync(int eventId, UpdateEventDto dto, int organizerId)

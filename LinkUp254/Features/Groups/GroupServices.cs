@@ -43,17 +43,86 @@ public class GroupServices
         return await query.OrderByDescending(g => g.MemberCount).ToListAsync();
     }
 
-    public async Task<GroupModel?> GetGroupByIdAsync(int id)
+
+
+
+
+
+    public async Task<GroupModel?> GetGroupByIdAsync(int id, int? currentUserId = null)
     {
-        return await _context.Groups
+        // Fetch group with proper eager loading
+        var group = await _context.Groups
             .Include(g => g.Organizer)
             .Include(g => g.GroupMembers)
                 .ThenInclude(gm => gm.User)
             .Include(g => g.GroupEvents)
-                .ThenInclude(ge => ge.Event)
+                .ThenInclude(ge => ge.Event!)      
             .Include(g => g.Settings)
+            .AsSplitQuery()                        
             .FirstOrDefaultAsync(g => g.Id == id && g.IsActive);
+
+        if (group == null)
+            return null;
+
+
+
+
+
+        //  DEBUG 
+        var loadedCount = group.GroupEvents?.Count ?? 0;
+        var withEventData = group.GroupEvents?.Count(ge => ge.Event != null) ?? 0;
+        Console.WriteLine($" Group {id}: Loaded {loadedCount} GroupEvents, {withEventData} have Event data loaded");
+
+        
+        if (currentUserId == null)
+        {
+            group.GroupEvents = group.GroupEvents?
+                .Where(ge => ge.Event?.Visibility == 0)
+                .ToList();
+            return group;
+        }
+
+        // Check user permissions
+        var isMember = group.GroupMembers?.Any(gm => gm.UserId == currentUserId && gm.IsActive) == true;
+        var isOrganizer = group.OrganizerId == currentUserId;
+
+        
+        group.GroupEvents = group.GroupEvents?
+            .Where(ge =>
+            {
+               
+                if (ge.Event == null)
+                {
+                    Console.WriteLine($" GroupEvent id={ge.Id} has null Event - visibility filter skipped");
+                    return false;
+                }
+
+                return ge.Event.Visibility == 0 ||                           // Public
+                       (ge.Event.Visibility == 1 && (isMember || isOrganizer)) || // Group Only
+                       (ge.Event.Visibility == 2 && isOrganizer);            // Private
+            })
+            .OrderByDescending(ge => ge.CreatedAt)
+            .ToList();
+
+
+        return group;
+
+        
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public async Task<GroupModel> CreateGroupAsync(CreateGroupDto dto, int organizerId)
     {
@@ -666,7 +735,7 @@ public class GroupServices
 
             if (existing != null)
             {
-                // Remove existing reaction (toggle off)
+                // Remove existing reaction
                 _context.GroupDiscussionReactions.Remove(existing);
             }
             else

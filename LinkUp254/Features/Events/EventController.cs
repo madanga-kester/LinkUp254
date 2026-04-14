@@ -9,7 +9,7 @@ using System.Security.Claims;
 namespace LinkUp254.Features.Events;
 
 [ApiController]
-[Route("api/events")]  
+[Route("api/events")]
 public class EventController : ControllerBase
 {
     private readonly EventServices _eventServices;
@@ -19,11 +19,21 @@ public class EventController : ControllerBase
         _eventServices = eventServices;
     }
 
-    // GET: api/events - All posted events (public)
+    //  Extract authenticated user ID from JWT claims
+    private int? GetAuthenticatedUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                       ?? User.FindFirst("sub")?.Value;
+
+        return int.TryParse(userIdClaim, out var userId) ? userId : null;
+    }
+
+    // GET: api/events - All posted events (public + visibility-aware)
     [HttpGet]
     public async Task<IActionResult> GetAllEvents([FromQuery] EventFilterDto filters)
     {
-        var result = await _eventServices.GetEventsAsync(filters);
+        var userId = GetAuthenticatedUserId(); 
+        var result = await _eventServices.GetEventsAsync(filters, userId);
         return Ok(result);
     }
 
@@ -42,19 +52,21 @@ public class EventController : ControllerBase
         return Ok(result);
     }
 
-    // GET: api/events/trending - Most attended events (public)
+    // GET: api/events/trending - Most attended events (public + visibility-aware)
     [HttpGet("trending")]
     public async Task<IActionResult> GetTrendingEvents([FromQuery] EventFilterDto filters)
     {
-        var result = await _eventServices.GetTrendingEventsAsync(filters);
+        var userId = GetAuthenticatedUserId(); 
+        var result = await _eventServices.GetTrendingEventsAsync(filters, userId);
         return Ok(result);
     }
 
-    // GET: api/events/{id} - Single event details (public)
+    // GET: api/events/{id} - Single event details (visibility-aware)
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetEventById(int id)
     {
-        var result = await _eventServices.GetEventByIdAsync(id);
+        var userId = GetAuthenticatedUserId(); 
+        var result = await _eventServices.GetEventByIdAsync(id, userId);
         return result != null ? Ok(result) : NotFound(new { message = "Event not found" });
     }
 
