@@ -519,23 +519,55 @@ public class EventServices
         }
     }
 
-    // DELETE: Soft deleting an event
-    public async Task<AuthResult> DeleteEventAsync(int eventId, int organizerId)
+
+
+    // DELETE: Soft delete an event (organizer OR group admin/moderator)
+    public async Task<AuthResult> DeleteEventAsync(int eventId, int requestingUserId)
     {
         try
         {
+            // 1. Fetch the event with group links
             var existingEvent = await _context.Events
-                .FirstOrDefaultAsync(e => e.Id == eventId && e.OrganizerId == organizerId);
+                .Include(e => e.GroupEvents)  
+                .FirstOrDefaultAsync(e => e.Id == eventId && e.IsActive);
 
             if (existingEvent == null)
-                return AuthResult.Failure("Event not found or you don't have permission to delete it.");
+                return AuthResult.Failure("Event not found.");
 
-            // Soft delete: just marking  as inactive
+            bool hasPermission = (existingEvent.OrganizerId == requestingUserId);
+
+            
+            if (!hasPermission && existingEvent.GroupEvents?.Any() == true)
+            {
+                foreach (var groupEvent in existingEvent.GroupEvents)
+                {
+                    // Check if user is admin/moderator of this group
+                    bool isGroupAdmin = await _context.GroupMembers
+                        .AnyAsync(gm =>
+                            gm.GroupId == groupEvent.GroupId &&
+                            gm.UserId == requestingUserId &&
+                            gm.IsActive &&
+                            (gm.Role == "admin" || gm.Role == "moderator"));
+
+                    if (isGroupAdmin)
+                    {
+                        hasPermission = true;
+                        break;
+                    }
+                }
+            }
+
+            //  Deny if no permission
+            if (!hasPermission)
+                return AuthResult.Failure("You do not have permission to delete this event.");
+
+            //  Soft delete: mark as inactive
             existingEvent.IsActive = false;
             existingEvent.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Event soft-deleted: {EventId}", eventId);
+
+            _logger.LogInformation("Event {EventId} soft-deleted by user {UserId}", eventId, requestingUserId);
             return AuthResult.Success("Event deleted successfully.");
         }
         catch (Exception ex)

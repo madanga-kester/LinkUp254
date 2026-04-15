@@ -115,18 +115,39 @@ public class EventController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
-    // DELETE: api/events/{id} - Soft delete event (organizer only)
+    //// DELETE: api/events/{id} - Soft delete event (organizer only)
+    //[HttpDelete("{id:int}")]
+    //[Authorize]
+    //public async Task<IActionResult> DeleteEvent(int id)
+    //{
+    //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+    //              ?? User.FindFirst("sub")?.Value;
+
+    //    if (string.IsNullOrEmpty(userId))
+    //        return Unauthorized(new { message = "Authentication required" });
+
+    //    var result = await _eventServices.DeleteEventAsync(id, int.Parse(userId));
+    //    return result.IsSuccess ? Ok(result) : BadRequest(result);
+    //}
+
+
+
+    // DELETE: api/events/{id} - Soft delete event (organizer OR group admin/moderator)
     [HttpDelete("{id:int}")]
     [Authorize]
     public async Task<IActionResult> DeleteEvent(int id)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                  ?? User.FindFirst("sub")?.Value;
+                  ?? User.FindFirst("sub")?.Value
+                  ?? User.FindFirst("nameid")?.Value
+                  ?? User.FindFirst("id")?.Value;
 
-        if (string.IsNullOrEmpty(userId))
+        if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
             return Unauthorized(new { message = "Authentication required" });
 
-        var result = await _eventServices.DeleteEventAsync(id, int.Parse(userId));
+        var result = await _eventServices.DeleteEventAsync(id, intUserId);
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
+
+
 }

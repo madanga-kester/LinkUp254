@@ -86,14 +86,16 @@ public class GroupServices
         var isMember = group.GroupMembers?.Any(gm => gm.UserId == currentUserId && gm.IsActive) == true;
         var isOrganizer = group.OrganizerId == currentUserId;
 
+
         
+
+        // Filter events according to visibility rules (with safe null handling)
         group.GroupEvents = group.GroupEvents?
             .Where(ge =>
             {
-               
-                if (ge.Event == null)
+                
+                if (ge.Event == null || !ge.Event.IsActive)  
                 {
-                    Console.WriteLine($" GroupEvent id={ge.Id} has null Event - visibility filter skipped");
                     return false;
                 }
 
@@ -103,6 +105,7 @@ public class GroupServices
             })
             .OrderByDescending(ge => ge.CreatedAt)
             .ToList();
+
 
 
         return group;
