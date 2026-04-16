@@ -165,17 +165,21 @@ namespace LinkUp254.Database
                       .OnDelete(DeleteBehavior.NoAction);
             });
 
+          
+
             //  GROUP CHAT 
             modelBuilder.Entity<GroupChat>(entity =>
             {
                 entity.HasIndex(gc => gc.GroupId);
                 entity.Property(gc => gc.IsActive).HasDefaultValue(true);
 
+                
                 entity.HasOne(gc => gc.Group)
                       .WithOne()
                       .HasForeignKey<GroupChat>(gc => gc.GroupId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
 
             //  GROUP MESSAGE 
             modelBuilder.Entity<GroupMessage>(entity =>
@@ -233,6 +237,8 @@ namespace LinkUp254.Database
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+            
+
             //  GROUP JOIN REQUEST 
             modelBuilder.Entity<GroupJoinRequest>(entity =>
             {
@@ -244,35 +250,42 @@ namespace LinkUp254.Database
                 entity.Property(gjr => gjr.Message).HasMaxLength(500);
                 entity.Property(gjr => gjr.ReviewNotes).HasMaxLength(500);
 
+                
                 entity.HasOne(gjr => gjr.Group)
                       .WithMany()
-                      .HasForeignKey(gjr => gjr.GroupId)
+                      .HasForeignKey("GroupId")
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(gjr => gjr.User)
                       .WithMany()
-                      .HasForeignKey(gjr => gjr.UserId)
+                      .HasForeignKey("UserId")
                       .OnDelete(DeleteBehavior.NoAction);
             });
+
+
+ 
+
 
             //  USER INTEREST 
             modelBuilder.Entity<UserInterest>(entity =>
             {
                 entity.HasKey(e => new { e.UserId, e.InterestId });
 
+                
                 entity.HasOne(e => e.User)
                       .WithMany()
-                      .HasForeignKey(e => e.UserId)
+                      .HasForeignKey("UserId")
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(e => e.Interest)
                       .WithMany()
-                      .HasForeignKey(e => e.InterestId)
+                      .HasForeignKey("InterestId")
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.Property(e => e.IsActive).HasDefaultValue(true);
                 entity.Property(e => e.SelectedAt).HasDefaultValueSql("GETUTCDATE()");
             });
+
 
             //  OTP CODES 
             modelBuilder.Entity<OtpCodes>(entity =>

@@ -863,7 +863,7 @@ public class GroupServices
         if (group == null)
             return AuthResult.Failure("Group not found.");
 
-        //if already a member
+        //if USER IS  already a member
         if (await _context.GroupMembers.AnyAsync(gm => gm.GroupId == groupId && gm.UserId == userId && gm.IsActive))
             return AuthResult.Failure("You are already a member of this group.");
 

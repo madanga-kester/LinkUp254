@@ -73,11 +73,22 @@ public class DiscussionController : ControllerBase
 
 
     // POST: api/discussions/reactions/{targetType}/{targetId} - Toggle reaction
+    //[HttpPost("reactions/{targetType}/{targetId:int}")]
+    //[Authorize]
+    //public async Task<IActionResult> ToggleReaction(string targetType, int targetId, [FromBody] ToggleReactionDto dto)
+    //{
+    //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+
+
+
+    // POST: api/discussions/reactions/{targetType}/{targetId} - Toggle reaction
     [HttpPost("reactions/{targetType}/{targetId:int}")]
     [Authorize]
-    public async Task<IActionResult> ToggleReaction(string targetType, int targetId, [FromBody] ToggleReactionDto dto)
+    public async Task<IActionResult> ToggleReaction(string targetType, int targetId, [FromBody] DiscussionToggleReactionDto dto)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+
+            //
                   ?? User.FindFirst("sub")?.Value;
 
         if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
@@ -93,9 +104,4 @@ public class DiscussionController : ControllerBase
 
 
 
-
-    public class ToggleReactionDto
-    {
-        public string Type { get; set; } = "upvote";
-    }
 }

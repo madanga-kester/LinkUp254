@@ -22,6 +22,12 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//builder.Services.AddSwaggerGen(options =>
+//{
+//    options.CustomSchemaIds(type => type.FullName?.Replace("+", "_") ?? type.Name);
+//});
+
+
 builder.Services.AddDbContext<LinkUpContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 

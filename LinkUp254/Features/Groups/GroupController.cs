@@ -74,10 +74,10 @@ public class GroupController : ControllerBase
         if (group == null)
             return NotFound(new { message = "Group not found" });
 
-        // DEBUG: Log what we're about to send
+        
         Console.WriteLine($" Controller: Sending group '{group.Name}' with {group.GroupEvents?.Count ?? 0} events (currentUserId={currentUserId})");
 
-        //  Return the group entity directly - EF Core already loaded navigation properties
+        
         return Ok(group);
     }
 
@@ -468,22 +468,24 @@ public class GroupController : ControllerBase
 
 
 
+
+
+
+
     //  POST: api/reactions/{targetType}/{targetId} - Toggle reaction
     [HttpPost("reactions/{targetType}/{targetId:int}")]
     [Authorize]
-    public async Task<IActionResult> ToggleReaction(string targetType, int targetId, [FromBody] ToggleReactionDto dto)
+    public async Task<IActionResult> ToggleReaction(string targetType, int targetId, [FromBody] GroupToggleReactionDto dto)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+
+
+
         if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
             return Unauthorized(new { message = "Authentication required" });
 
         var result = await _groupServices.ToggleReactionAsync(targetType, targetId, intUserId, dto.Type);
         return result.IsSuccess ? Ok(new { isSuccess = true, message = result.Message }) : BadRequest(new { message = result.Message });
-    }
-
-    public class ToggleReactionDto
-    {
-        public string Type { get; set; } = "upvote"; // "upvote", "helpful", "love"
     }
 
 
