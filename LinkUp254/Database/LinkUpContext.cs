@@ -42,6 +42,10 @@ namespace LinkUp254.Database
         public DbSet<GroupDiscussionReply> GroupDiscussionReplies { get; set; } = null!;
         public DbSet<GroupDiscussionReaction> GroupDiscussionReactions { get; set; } = null!;
 
+
+        // Gallery
+        public DbSet<LinkUp254.Features.Gallery.Models.GroupGallery> GroupGallery { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -328,6 +332,28 @@ namespace LinkUp254.Database
                 entity.Property(i => i.Category).HasMaxLength(100);
                 entity.Property(i => i.Icon).HasMaxLength(50);
             });
+
+
+
+
+
+
+
+            //  GROUP GALLERY 
+            modelBuilder.Entity<LinkUp254.Features.Gallery.Models.GroupGallery>(entity =>
+            {
+                entity.HasIndex(gg => gg.GroupId);
+                entity.HasIndex(gg => gg.UploadedById);
+                entity.HasIndex(gg => gg.IsActive);
+
+                entity.Property(gg => gg.ImageUrl).IsRequired().HasMaxLength(500);
+                entity.Property(gg => gg.Caption).HasMaxLength(200);
+                entity.Property(gg => gg.IsActive).HasDefaultValue(true);
+
+            });
+
+
+
         }
 
         // Auto timestamping for BaseEntity

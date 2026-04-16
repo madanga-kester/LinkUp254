@@ -1,6 +1,7 @@
 ﻿using LinkUp254.Database;
-using LinkUp254.Features.Auth;
 using LinkUp254.Features.AdminAuth;
+using LinkUp254.Features.Auth;
+using LinkUp254.Features.Gallery.Services;
 using LinkUp254.Features.Shared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -22,10 +23,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-//builder.Services.AddSwaggerGen(options =>
-//{
-//    options.CustomSchemaIds(type => type.FullName?.Replace("+", "_") ?? type.Name);
-//});
+
 
 
 builder.Services.AddDbContext<LinkUpContext>(options =>
@@ -36,6 +34,8 @@ builder.Services.AddScoped<AuthServices>();
 builder.Services.AddScoped<AdminAuthServices>();
 builder.Services.AddScoped<LinkUp254.Features.Events.EventServices>();
 builder.Services.AddScoped<LinkUp254.Features.Groups.GroupServices>();
+//builder.Services.AddScoped<LinkUp254.Features.Gallery.Services.GalleryServices>();
+builder.Services.AddScoped<IGalleryServices, GalleryServices>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);

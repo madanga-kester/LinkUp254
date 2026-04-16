@@ -597,14 +597,6 @@ public class GroupController : ControllerBase
     
 
 
-    // GET: api/groups/{id}/gallery
-    [HttpGet("{id:int}/gallery")]
-    public async Task<IActionResult> GetGallery(int id)
-    {
-        var gallery = await _groupServices.GetGalleryAsync(id);
-        return Ok(gallery);
-    }
-
 
 
     // DELETE: api/groups/{id}/chat/messages/{messageId} - Delete message (organizer only)

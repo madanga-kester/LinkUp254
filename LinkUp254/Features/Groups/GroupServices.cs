@@ -1096,26 +1096,6 @@ public class GroupServices
 
 
 
-    //  Gallery
-    public async Task<List<GalleryItemDto>> GetGalleryAsync(int groupId)
-    {
-        var gallery = await _context.GroupMessages
-            .Where(m => m.GroupChat.GroupId == groupId
-                && !m.IsDeleted
-                && m.AttachmentUrl != null)
-            .Select(m => new GalleryItemDto
-            {
-                Id = m.Id,
-                Url = m.AttachmentUrl,
-                UploadedBy = m.Sender.FirstName + " " + m.Sender.LastName,
-                UploadedAt = m.SentAt
-            })
-            .OrderByDescending(g => g.UploadedAt)
-            .Take(20)
-            .ToListAsync();
-
-        return gallery;
-    }
 
     // Delete Message (for Organizer)
     public async Task<AuthResult> DeleteMessageAsync(int groupId, int messageId, int organizerId)
@@ -1376,13 +1356,7 @@ public class DiscussionItemDto
     public int? SourceMessageId { get; set; }
 }
 
-public class GalleryItemDto
-{
-    public int Id { get; set; }
-    public string Url { get; set; } = string.Empty;
-    public string UploadedBy { get; set; } = string.Empty;
-    public DateTime UploadedAt { get; set; }
-}
+
 
 
 public class UserDto
