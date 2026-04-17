@@ -30,6 +30,7 @@ public class GalleryServices : IGalleryServices
 
     public async Task<List<GalleryItemDto>> GetGalleryAsync(int groupId)
     {
+        
         return await _context.GroupGallery
             .Where(gg => gg.GroupId == groupId && gg.IsActive)
             .Include(gg => gg.UploadedBy)
@@ -43,6 +44,7 @@ public class GalleryServices : IGalleryServices
             })
             .OrderByDescending(gg => gg.UploadedAt)
             .ToListAsync();
+
     }
 
     public async Task<ServiceResult<GalleryItemDto>> UploadGalleryImageAsync(int groupId, int uploaderId, UploadGalleryImageRequest request)
