@@ -13,7 +13,7 @@ namespace LinkUp254.Features.Groups;
 public class GroupController : ControllerBase
 {
     private readonly GroupServices _groupServices;
-    
+
 
     public GroupController(GroupServices groupServices)
     {
@@ -26,15 +26,15 @@ public class GroupController : ControllerBase
     {
         var groups = await _groupServices.GetAllGroupsAsync(city, country);
 
-    
+
         return Ok(groups);
     }
 
-    
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetGroupById(int id)
     {
-        
+
         int? currentUserId = null;
 
         if (User.Identity?.IsAuthenticated == true)
@@ -74,10 +74,10 @@ public class GroupController : ControllerBase
         if (group == null)
             return NotFound(new { message = "Group not found" });
 
-        
+
         Console.WriteLine($" Controller: Sending group '{group.Name}' with {group.GroupEvents?.Count ?? 0} events (currentUserId={currentUserId})");
 
-        
+
         return Ok(group);
     }
 
@@ -161,39 +161,6 @@ public class GroupController : ControllerBase
 
 
 
-    // cover images
-
-
-    [RequestSizeLimit(10 * 1024 * 1024)] // 10MB
-    [HttpPut("{id:int}/cover-image")]
-    [Authorize]
-    public async Task<IActionResult> UpdateCoverImage(int id, [FromBody] UpdateCoverImageDto dto)
-    {
-        try
-        {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] UpdateCoverImage START: id={id}, CoverImage length={(dto.CoverImage?.Length ?? 0)}");
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                      ?? User.FindFirst("sub")?.Value;
-
-            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
-                return Unauthorized(new { message = "Authentication required" });
-
-            var result = await _groupServices.UpdateCoverImageAsync(id, intUserId, dto.CoverImage);
-
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] UpdateCoverImage END: IsSuccess={result.IsSuccess}");
-
-            return result.IsSuccess
-                ? Ok(new { isSuccess = true, message = "Cover image updated successfully", coverImage = result.CoverImage })
-                : BadRequest(new { message = result.Message ?? "Failed to update cover image" });
-        }
-        catch (Exception ex)
-        {
-            // Logging error to console
-            System.Diagnostics.Debug.WriteLine($"[ERROR] UpdateCoverImage CRASHED: {ex.Message}\n{ex.StackTrace}");
-            return StatusCode(500, new { message = $"Server error: {ex.Message}" });
-        }
-    }
 
 
 
@@ -223,7 +190,7 @@ public class GroupController : ControllerBase
 
 
     [HttpPost("{id:int}/join")]
-    [Authorize]  
+    [Authorize]
     public async Task<IActionResult> JoinGroup(int id)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -388,7 +355,7 @@ public class GroupController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
-   
+
 
 
     // GET: api/groups/{id}/rules - Get all rules
@@ -594,7 +561,7 @@ public class GroupController : ControllerBase
         return Ok(activities);
     }
 
-    
+
 
 
 
@@ -680,8 +647,8 @@ public class UpdateRoleDto
 
 public class UpdateGroupDto
 {
-    [Required, StringLength(100)]
-    public string Name { get; set; } = string.Empty;
+    [StringLength(100)]
+    public string? Name { get; set; }
 
     [StringLength(500)]
     public string? Description { get; set; }
@@ -695,16 +662,11 @@ public class UpdateGroupDto
     [StringLength(200)]
     public string? Location { get; set; }
 
-    public bool IsPrivate { get; set; }
-    public bool AllowMemberInvites { get; set; } = true;
-    public bool AllowMemberPosts { get; set; } = true;
-    public bool ModerateMessages { get; set; }
+    // ✅ All booleans are nullable (bool?) for partial updates
+    public bool? IsPrivate { get; set; }
+    public bool? AllowMemberInvites { get; set; }
+    public bool? AllowMemberPosts { get; set; }
+    public bool? ModerateMessages { get; set; }
 
-    [StringLength(500)]
-    public string? CoverImage { get; set; }
-}
-public class UpdateCoverImageDto
-{
-  
-    public string? CoverImage { get; set; } // URL or base64 data URL
+    // CoverImage REMOVED - use GroupCoverImage feature instead
 }

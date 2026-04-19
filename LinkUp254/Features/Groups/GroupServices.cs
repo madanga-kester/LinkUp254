@@ -1197,23 +1197,28 @@ public class GroupServices
         if (group.OrganizerId != organizerId)
             return (false, "Only the organizer can update group details", null);
 
-        // Update fields
-        group.Name = dto.Name;
-        group.Description = dto.Description;
-        group.City = dto.City;
-        group.Country = dto.Country;
-        group.Location = dto.Location;
-        group.IsPrivate = dto.IsPrivate;
-        group.CoverImage = dto.CoverImage;
+
+
+        //  Partial update: only apply if value is sent
+        if (!string.IsNullOrEmpty(dto.Name)) group.Name = dto.Name;
+        if (dto.Description != null) group.Description = dto.Description;
+        if (dto.City != null) group.City = dto.City;
+        if (dto.Country != null) group.Country = dto.Country;
+        if (dto.Location != null) group.Location = dto.Location;
+        if (dto.IsPrivate.HasValue) group.IsPrivate = dto.IsPrivate.Value;
+
         group.UpdatedAt = DateTime.UtcNow;
 
-        // Update settings if provided
+        // Update settings ONLY if provided
         if (group.Settings != null)
         {
-            group.Settings.AllowMemberInvites = dto.AllowMemberInvites;
-            group.Settings.AllowMemberPosts = dto.AllowMemberPosts;
-            group.Settings.ModerateMessages = dto.ModerateMessages;
+            if (dto.AllowMemberInvites.HasValue) group.Settings.AllowMemberInvites = dto.AllowMemberInvites.Value;
+            if (dto.AllowMemberPosts.HasValue) group.Settings.AllowMemberPosts = dto.AllowMemberPosts.Value;
+            if (dto.ModerateMessages.HasValue) group.Settings.ModerateMessages = dto.ModerateMessages.Value;
         }
+
+
+
 
         // Save changes
         await _context.SaveChangesAsync();
@@ -1230,61 +1235,6 @@ public class GroupServices
 
 
 
-
-
-    public async Task<(bool IsSuccess, string? Message, string? CoverImage)> UpdateCoverImageAsync(
-    int groupId,
-    int organizerId,
-    string? coverImageUrl)
-    {
-        try
-        {
-            var group = await _context.Groups.FirstOrDefaultAsync(g => g.Id == groupId);
-
-            if (group == null)
-                return (false, "Group not found", null);
-
-            if (group.OrganizerId != organizerId)
-                return (false, "Only the organizer can update the cover image", null);
-
-            if (!string.IsNullOrEmpty(coverImageUrl))
-            {
-                
-                if (coverImageUrl.StartsWith("image") && coverImageUrl.Length > 5_000_000) // 5MB safety limit
-                {
-                    return (false, "Image too large. Please use an external URL or compress the image.", null);
-                }
-
-                group.CoverImage = coverImageUrl;
-                group.UpdatedAt = DateTime.UtcNow;
-
-                await _context.SaveChangesAsync();
-                return (true, null, group.CoverImage);
-            }
-
-            return (false, "Cover image cannot be empty", null);
-        }
-        catch (Microsoft.Data.SqlClient.SqlException sqlEx)
-        {
-           
-            
-            //  Log   SQL error
-            System.Diagnostics.Debug.WriteLine($"[SQL ERROR] UpdateCoverImageAsync: {sqlEx.Message}\nNumber: {sqlEx.Number}");
-
-           
-            if (sqlEx.Number == 8152)
-            {
-                return (false, "Cover image too large for database. Please use a smaller image or external URL.", null);
-            }
-
-            return (false, $"Database error: {sqlEx.Message}", null);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[SERVICE ERROR] UpdateCoverImageAsync: {ex.Message}\n{ex.InnerException?.Message}");
-            return (false, $"Unexpected error: {ex.Message}", null);
-        }
-    }
 
 
 

@@ -1,5 +1,6 @@
 ﻿using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Groups.Models;
+using LinkUp254.Features.GroupCoverImage.Models;
 using LinkUp254.Features.Shared;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -34,6 +35,7 @@ namespace LinkUp254.Database
         public DbSet<GroupChat> GroupChats { get; set; } = null!;
         public DbSet<GroupMessage> GroupMessages { get; set; } = null!;
         public DbSet<GroupSettings> GroupSettings { get; set; } = null!;
+        public DbSet<GroupCoverImageModel> GroupCoverImages { get; set; }
         public DbSet<GroupRule> GroupRules { get; set; } = null!;
         public DbSet<GroupJoinRequest> GroupJoinRequests { get; set; } = null!;
 

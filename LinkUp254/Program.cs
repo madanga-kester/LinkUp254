@@ -25,6 +25,8 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -72,6 +74,12 @@ builder.Services.AddScoped<AuthServices>();
 builder.Services.AddScoped<AdminAuthServices>();
 builder.Services.AddScoped<LinkUp254.Features.Events.EventServices>();
 builder.Services.AddScoped<LinkUp254.Features.Groups.GroupServices>();
+
+builder.Services.AddScoped<LinkUp254.Features.Groups.GroupServices>();
+builder.Services.AddScoped<LinkUp254.Features.GroupCoverImage.Services.IGroupCoverImageServices,
+                             LinkUp254.Features.GroupCoverImage.Services.GroupCoverImageServices>(); 
+
+
 builder.Services.AddScoped<IGalleryServices, GalleryServices>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
