@@ -125,19 +125,19 @@ public class GroupServices
 
 
 
-
-
     public async Task<GroupModel> CreateGroupAsync(CreateGroupDto dto, int organizerId)
     {
+        
         var group = new GroupModel
         {
             Name = dto.Name.Trim(),
             Description = dto.Description?.Trim(),
-            CoverImage = dto.CoverImage?.Trim(),
+            CoverImage = dto.CoverImage?.Trim() ?? dto.CoverImageBase64?.Trim(),
             OrganizerId = organizerId,
             City = dto.City?.Trim(),
             Country = dto.Country?.Trim(),
             Location = dto.Location?.Trim(),
+            IsPrivate = dto.IsPrivate,                    
             MemberCount = 1,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -146,6 +146,7 @@ public class GroupServices
         _context.Groups.Add(group);
         await _context.SaveChangesAsync();
 
+        
         var member = new GroupMemberModel
         {
             GroupId = group.Id,
@@ -156,6 +157,7 @@ public class GroupServices
         };
         _context.GroupMembers.Add(member);
 
+        
         var settings = new GroupSettings
         {
             GroupId = group.Id,
@@ -171,6 +173,7 @@ public class GroupServices
         };
         _context.GroupSettings.Add(settings);
 
+        
         if (dto.Rules?.Any() == true)
         {
             foreach (var ruleDto in dto.Rules)
@@ -192,6 +195,8 @@ public class GroupServices
         {
             foreach (var tagName in dto.InterestTags)
             {
+                if (string.IsNullOrWhiteSpace(tagName)) continue;
+
                 var interest = await _context.Interests
                     .FirstOrDefaultAsync(i => i.Name.ToLower() == tagName.ToLower().Trim());
 
@@ -210,10 +215,20 @@ public class GroupServices
             }
         }
 
+        // Final save for settings, member, rules
         await _context.SaveChangesAsync();
 
         return group;
     }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -282,7 +297,7 @@ public class GroupServices
                 {
                     return (true, "Request is already pending.", true);
                 }
-                // if Approved -> Should be member, but just in case
+                // if Approved = Should be member, but just in case
                 if (existingRequest.Status == "approved")
                 {
                     var member = new GroupMemberModel
@@ -1193,23 +1208,23 @@ public class GroupServices
         if (group == null)
             return (false, "Group not found", null);
 
-        // Verify organizer
+        
         if (group.OrganizerId != organizerId)
             return (false, "Only the organizer can update group details", null);
 
 
 
-        //  Partial update: only apply if value is sent
+        
         if (!string.IsNullOrEmpty(dto.Name)) group.Name = dto.Name;
         if (dto.Description != null) group.Description = dto.Description;
         if (dto.City != null) group.City = dto.City;
         if (dto.Country != null) group.Country = dto.Country;
         if (dto.Location != null) group.Location = dto.Location;
-        if (dto.IsPrivate.HasValue) group.IsPrivate = dto.IsPrivate.Value;
+        if (dto.IsPrivate !=null) group.IsPrivate = dto.IsPrivate.Value;
 
         group.UpdatedAt = DateTime.UtcNow;
 
-        // Update settings ONLY if provided
+        
         if (group.Settings != null)
         {
             if (dto.AllowMemberInvites.HasValue) group.Settings.AllowMemberInvites = dto.AllowMemberInvites.Value;
@@ -1220,10 +1235,10 @@ public class GroupServices
 
 
 
-        // Save changes
+      
         await _context.SaveChangesAsync();
 
-        // Return updated group - use alias for return type clarity
+       
         var updatedGroup = await _context.Groups
             .Include(g => g.Organizer)
             .Include(g => g.Settings)

@@ -34,7 +34,7 @@ public class GroupCoverImageModel
     [Required]
     public int UploadedBy { get; set; }
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+   // [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
 
     public bool IsActive { get; set; } = true;

@@ -662,11 +662,10 @@ public class UpdateGroupDto
     [StringLength(200)]
     public string? Location { get; set; }
 
-    // ✅ All booleans are nullable (bool?) for partial updates
+    
     public bool? IsPrivate { get; set; }
     public bool? AllowMemberInvites { get; set; }
     public bool? AllowMemberPosts { get; set; }
     public bool? ModerateMessages { get; set; }
 
-    // CoverImage REMOVED - use GroupCoverImage feature instead
 }
