@@ -1286,7 +1286,26 @@ public class GroupServices
     }
 
 
+    // GET: /api/groups/join-statuses?userId={userId}
+    public async Task<List<JoinStatusDto>> GetJoinStatusesAsync(int userId)
+    {
+        var requests = await _context.GroupJoinRequests
+            .Where(r => r.UserId == userId && r.Status != "approved")
+            .Select(r => new JoinStatusDto
+            {
+                GroupId = r.GroupId,
+                Status = r.Status // "pending" or "rejected"
+            })
+            .ToListAsync();
 
+        return requests;
+    }
+
+    public class JoinStatusDto
+    {
+        public int GroupId { get; set; }
+        public string Status { get; set; } = string.Empty; // "none" | "pending" | "rejected"
+    }
 
 
 
