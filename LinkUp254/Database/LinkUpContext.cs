@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using LinkUp254.Features.Events.Models;
 
 namespace LinkUp254.Database
 {
@@ -17,8 +18,25 @@ namespace LinkUp254.Database
         // Main Entities
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Event> Events { get; set; } = null!;
+
+
         public DbSet<EventAttendee> EventAttendees { get; set; } = null!;
-        public DbSet<Ticket> Tickets { get; set; } = null!;
+       
+
+
+
+
+        public DbSet<TicketTier> TicketTiers { get; set; }
+        public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<TicketTransaction> TicketTransactions { get; set; }
+        public DbSet<TicketCheckIn> TicketCheckIns { get; set; }
+
+
+
+
+
+
+
 
         // Auth / OTP
         public DbSet<OtpCodes> OtpCodes { get; set; } = null!;
@@ -109,6 +127,47 @@ namespace LinkUp254.Database
 
                 entity.Property(ei => ei.Weight).HasDefaultValue(1f);
             });
+
+
+
+
+            //
+
+
+            modelBuilder.Entity<TicketTier>()
+    .HasOne(t => t.Event)
+    .WithMany(e => e.TicketTiers)
+    .HasForeignKey(t => t.EventId)
+    .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Ticket>()
+                .HasOne(t => t.TicketTier)
+                .WithMany(tt => tt.Tickets)
+                .HasForeignKey(t => t.TicketTierId)
+                .OnDelete(DeleteBehavior.Restrict); 
+
+            modelBuilder.Entity<Ticket>()
+                .HasOne(t => t.Event)
+                .WithMany(e => e.Tickets)
+                .HasForeignKey(t => t.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TicketTransaction>()
+                .HasOne(tt => tt.Ticket)
+                .WithMany()
+                .HasForeignKey(tt => tt.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TicketCheckIn>()
+                .HasOne(tc => tc.Ticket)
+                .WithMany()
+                .HasForeignKey(tc => tc.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+
+
+
 
             //  GROUP EVENT 
             modelBuilder.Entity<GroupEvent>(entity =>
@@ -310,11 +369,39 @@ namespace LinkUp254.Database
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
+
+
+
             // TICKET 
             modelBuilder.Entity<Ticket>(entity =>
             {
-                entity.Property(t => t.Price).HasPrecision(18, 2);
+                entity.Property(t => t.PricePaid).HasPrecision(18, 2);
+              
+                entity.Property(t => t.TicketCode).HasMaxLength(50);
+                entity.Property(t => t.BuyerName).HasMaxLength(200);
+                entity.Property(t => t.BuyerEmail).HasMaxLength(254);
+                entity.Property(t => t.BuyerPhoneNumber).HasMaxLength(20);
+                entity.Property(t => t.AttendeeName).HasMaxLength(200);
+                entity.Property(t => t.AttendeeEmail).HasMaxLength(254);
+                entity.Property(t => t.AttendeePhoneNumber).HasMaxLength(20);
+                entity.Property(t => t.StudentIdImageUrl).HasMaxLength(500);
+                entity.Property(t => t.PaymentProvider).HasMaxLength(100);
+                entity.Property(t => t.ProviderTransactionId).HasMaxLength(100);
+                entity.Property(t => t.PaymentStatus).HasMaxLength(50);
+                entity.Property(t => t.TicketStatus).HasMaxLength(50);
+                entity.Property(t => t.CheckedInByUserId).HasMaxLength(100);
+                entity.Property(t => t.CheckInDeviceId).HasMaxLength(100);
+                entity.Property(t => t.TransferredToEmail).HasMaxLength(254);
+                entity.Property(t => t.RefundReason).HasMaxLength(500);
+                entity.Property(t => t.QRCodeData).HasMaxLength(500);
+                entity.Property(t => t.QRCodeImageUrl).HasMaxLength(500);
+                entity.Property(t => t.VerificationStatus).HasMaxLength(50);
+                entity.Property(t => t.SmsDeliveryStatus).HasMaxLength(50);
+                entity.Property(t => t.Metadata).HasMaxLength(2000);
+                entity.Property(t => t.BuyerUserId).HasMaxLength(100);
             });
+
+
 
             //  USER 
             modelBuilder.Entity<User>(entity =>

@@ -19,6 +19,28 @@ public class UpdateEventDto
     [StringLength(500)]
     public string? Location { get; set; }
 
+   
+
+
+    [StringLength(200)]
+    public string? VenueName { get; set; }
+
+    [StringLength(500)]
+    public string? StreetAddress { get; set; }
+
+    [Range(-90, 90)]
+    public double? Latitude { get; set; }
+
+    [Range(-180, 180)]
+    public double? Longitude { get; set; }
+
+    [StringLength(100)]
+    public string? MapProviderPlaceId { get; set; }
+
+    // Location Visibility (0=Public, 1=Approximate, 2=Private)
+    [Range(0, 2)]
+    public int? LocationVisibility { get; set; }
+
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
 
@@ -31,6 +53,5 @@ public class UpdateEventDto
 
     public bool? IsPublished { get; set; }
 
-    
     public List<int>? InterestIds { get; set; }
 }

@@ -18,7 +18,31 @@ public class CreateEventDto
     public string? Country { get; set; }
 
     [StringLength(500)]
-    public string? Location { get; set; }  
+    public string? Location { get; set; }
+
+   
+
+
+
+
+    [StringLength(200)]
+    public string? VenueName { get; set; }
+
+    [StringLength(500)]
+    public string? StreetAddress { get; set; }
+
+    [Range(-90, 90)]
+    public double? Latitude { get; set; }
+
+    [Range(-180, 180)]
+    public double? Longitude { get; set; }
+
+    [StringLength(100)]
+    public string? MapProviderPlaceId { get; set; }
+
+
+    [Range(0, 2)]
+    public int? LocationVisibility { get; set; }
 
     [Required]
     public DateTime StartDate { get; set; }
@@ -30,18 +54,17 @@ public class CreateEventDto
     public int? GroupId { get; set; }
 
     [StringLength(500)]
-    public string? ImageUrl { get; set; }  
+    public string? ImageUrl { get; set; }
 
     public int? MaxAttendees { get; set; }
 
-    public bool? IsPublished { get; set; } = false;  
+    public bool? IsPublished { get; set; } = false;
 
-    // Interest IDs to associate with event
     public List<int>? InterestIds { get; set; }
 
-    // Visibility setting (0=Public, 1=GroupOnly, 2=Private)
+    // Content Visibility (0=Public, 1=GroupOnly, 2=Private)
     public int? Visibility { get; set; }
 
-    // : Explicit IsFree flag (in case Price=0 but not free)
+    
     public bool? IsFree { get; set; }
 }

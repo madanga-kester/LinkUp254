@@ -1,5 +1,10 @@
 ﻿
 
+
+
+
+
+
 using LinkUp254.Database;
 using LinkUp254.Features.Auth;
 using LinkUp254.Features.Groups.DTOs;
@@ -15,9 +20,10 @@ using GroupEventModel = LinkUp254.Features.Groups.Models.GroupEvent;
 using GroupMemberModel = LinkUp254.Features.Groups.Models.GroupMember;
 using GroupModel = LinkUp254.Features.Groups.Models.Group;
 
-
-
 namespace LinkUp254.Features.Groups;
+
+
+
 
 public class GroupServices
 {
@@ -1343,13 +1349,13 @@ public class DiscussionItemDto
 
 
 
-public class UserDto
-{
-    public int Id { get; set; }
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string? ProfilePicture { get; set; }
-}
+//public class UserDto
+//{
+//    public int Id { get; set; }
+//    public string FirstName { get; set; } = string.Empty;
+//    public string LastName { get; set; } = string.Empty;
+//    public string? ProfilePicture { get; set; }
+//}
 public class AddMemberDto
 {
     public int TargetUserId { get; set; }

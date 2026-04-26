@@ -1,5 +1,5 @@
-﻿
-using System;
+﻿using LinkUp254.Features.Shared;
+using System.ComponentModel.DataAnnotations;
 
 namespace LinkUp254.Features.Groups.DTOs;
 

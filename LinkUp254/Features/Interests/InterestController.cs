@@ -76,6 +76,39 @@ namespace LinkUp254.Features.Interests
             }
         }
 
+
+
+
+
+
+
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<ActionResult<List<InterestDto>>> GetAllInterests()
+        {
+            var interests = await _context.Interests
+                .Where(i => i.IsActive) 
+                .Select(i => new InterestDto { Id = i.Id, Name = i.Name })
+                .ToListAsync();
+            return Ok(interests);
+        }
+
+        public class InterestDto
+        {
+            public int Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+        }
+
+
+
+
+
+
+
+
+
+
         // GET: api/interest/my -Get current user's selected interests
         [HttpGet("my")]
         [Authorize]

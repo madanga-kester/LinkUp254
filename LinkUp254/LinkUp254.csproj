@@ -9,8 +9,9 @@
     <UserSecretsId>766bd7d4-a4aa-4049-ba79-6dee5b9db3be</UserSecretsId>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- REMOVED: <Compile Remove="Features\Groups\Models\GroupMessage.cs" /> -->
+  <ItemGroup><!-- REMOVED: <Compile Remove="Features\Groups\Models\GroupMessage.cs" /> -->
+  
+    <Compile Remove="Features\Shared\SeedData.cs" />
   </ItemGroup>
 
   <ItemGroup>

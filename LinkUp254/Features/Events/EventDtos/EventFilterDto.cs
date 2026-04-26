@@ -4,7 +4,7 @@ namespace LinkUp254.Features.Events.DTOs;
 
 public class EventFilterDto
 {
-    // Location filters
+   
     [StringLength(100)]
     public string? City { get; set; }
 
@@ -36,7 +36,7 @@ public class EventFilterDto
     public int Offset { get; set; } = 0;
     public string? Search { get; set; }
 
-    // Sort options
+    // Sort 
     [RegularExpression("^(date_asc|date_desc|popularity|price_asc|price_desc|relevance)$")]
     public string SortBy { get; set; } = "relevance";
 

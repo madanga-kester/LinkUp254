@@ -1,6 +1,7 @@
 ﻿using LinkUp254.Database;
 using LinkUp254.Features.AdminAuth;
 using LinkUp254.Features.Auth;
+using LinkUp254.Features.Events.Services;
 using LinkUp254.Features.Gallery.Services;
 using LinkUp254.Features.Shared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -72,7 +73,12 @@ builder.Services.AddDbContext<LinkUpContext>(options =>
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<AuthServices>();
 builder.Services.AddScoped<AdminAuthServices>();
-builder.Services.AddScoped<LinkUp254.Features.Events.EventServices>();
+
+
+builder.Services.AddScoped<TicketServices>();
+
+
+builder.Services.AddScoped<EventServices>();
 builder.Services.AddScoped<LinkUp254.Features.Groups.GroupServices>();
 
 builder.Services.AddScoped<LinkUp254.Features.Groups.GroupServices>();
@@ -91,6 +97,10 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 })
+
+
+
+
 .AddJwtBearer(options =>
 {
     options.RequireHttpsMetadata = false;
@@ -104,7 +114,12 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        ClockSkew = TimeSpan.Zero,
+       
+
+
+        ClockSkew = builder.Environment.IsDevelopment()
+            ? TimeSpan.FromMinutes(5)
+            : TimeSpan.FromMinutes(1),
         NameClaimType = "sub",
         RoleClaimType = "Role"
     };
@@ -132,6 +147,15 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+
+
+
+
+
+
+
+
+
 
 builder.Services.AddAuthorization(options =>
 {
