@@ -19,8 +19,9 @@ public class UpdateEventDto
     [StringLength(500)]
     public string? Location { get; set; }
 
-   
 
+    public bool? AgeRestricted { get; set; }
+    public int? MinAge { get; set; }
 
     [StringLength(200)]
     public string? VenueName { get; set; }

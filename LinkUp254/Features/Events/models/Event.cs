@@ -33,6 +33,10 @@ public class Event : BaseEntity
 
 
 
+    public bool AgeRestricted { get; set; } = false;
+    public int? MinAge { get; set; }
+
+
     [StringLength(200)]
     public string? VenueName { get; set; }
 

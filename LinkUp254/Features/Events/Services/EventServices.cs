@@ -51,16 +51,6 @@ public class EventServices
             .Distinct();
     }
 
-
-
-
-
-
-
-
-
-
-
     public async Task<PagedResult<Event>> GetNearbyEventsAsync(
     double userLatitude,
     double userLongitude,
@@ -70,7 +60,6 @@ public class EventServices
     {
         try
         {
-           
             var query = _context.Events
                 .Where(e => e.IsActive
                          && e.IsPublished
@@ -80,10 +69,8 @@ public class EventServices
                 .AsNoTracking()
                 .AsQueryable();
 
-           
             query = ApplyVisibilityFilter(query, userId);
 
-           
             if (!string.IsNullOrEmpty(filters.City))
                 query = query.Where(e => EF.Functions.Like(e.City, $"%{filters.City}%"));
             if (!string.IsNullOrEmpty(filters.Country))
@@ -94,8 +81,9 @@ public class EventServices
                 query = query.Where(e => e.StartTime <= filters.EndDate.Value);
             if (filters.IsFreeOnly == true)
                 query = query.Where(e => e.IsFree);
+            if (filters.MinAge.HasValue)
+                query = query.Where(e => !e.AgeRestricted || e.MinAge <= filters.MinAge.Value);
 
-           
             var allEvents = await query
                 .Include(e => e.EventInterests).ThenInclude(ei => ei.Interest)
                 .Include(e => e.Organizer)
@@ -118,7 +106,6 @@ public class EventServices
               .OrderBy(x => x.Distance)
               .ToList();
 
-            // Apply pagination
             var total = nearbyEvents.Count;
             var pagedEvents = nearbyEvents
                 .Skip(filters.Offset)
@@ -141,7 +128,6 @@ public class EventServices
         }
     }
 
-    // Haversine formula helper
     private double CalculateHaversineDistance(double lat1, double lon1, double lat2, double lon2)
     {
         const double R = 6371;
@@ -156,13 +142,6 @@ public class EventServices
 
     private double ToRadians(double degrees) => degrees * (Math.PI / 180);
 
-
-
-
-
-
-
-
     public async Task<PagedResult<Event>> GetEventsAsync(EventFilterDto filters, int? userId = null)
     {
         try
@@ -173,18 +152,6 @@ public class EventServices
                 .AsQueryable();
 
             query = ApplyVisibilityFilter(query, userId);
-
-            //if (!string.IsNullOrEmpty(filters.Search))
-            //{
-            //    var searchTerm = $"%{filters.Search}%";
-            //    query = query.Where(e =>
-            //        EF.Functions.Like(e.Title, searchTerm) ||
-            //        EF.Functions.Like(e.Description, searchTerm) ||
-            //        EF.Functions.Like(e.Location, searchTerm) ||
-            //        EF.Functions.Like(e.City, searchTerm) ||
-            //        EF.Functions.Like(e.Country, searchTerm)
-            //    );
-            //}
 
             if (!string.IsNullOrEmpty(filters.Search))
             {
@@ -199,8 +166,6 @@ public class EventServices
                     EF.Functions.Like(e.StreetAddress, searchTerm)
                 );
             }
-
-
 
             if (!string.IsNullOrEmpty(filters.City))
                 query = query.Where(e => EF.Functions.Like(e.City, $"%{filters.City}%"));
@@ -220,6 +185,8 @@ public class EventServices
                 query = query.Where(e => e.Price >= filters.MinPrice);
             if (filters.MaxPrice.HasValue)
                 query = query.Where(e => e.Price <= filters.MaxPrice);
+            if (filters.MinAge.HasValue)
+                query = query.Where(e => !e.AgeRestricted || e.MinAge <= filters.MinAge.Value);
 
             query = filters.SortBy switch
             {
@@ -263,33 +230,28 @@ public class EventServices
             if (!int.TryParse(userId, out var userIdInt))
                 return new PagedResult<Event> { Items = new List<Event>(), Total = 0 };
 
-            
             var userInterestIds = await _context.UserInterests
                 .AsNoTracking()
                 .Where(ui => ui.UserId == userIdInt && ui.IsActive)
                 .Select(ui => ui.InterestId)
                 .ToListAsync();
 
-           
             var userGroupIds = await _context.GroupMembers
                 .AsNoTracking()
                 .Where(gm => gm.UserId == userIdInt && gm.IsActive)
                 .Select(gm => gm.GroupId)
                 .ToListAsync();
 
-         
             var baseQuery = _context.Events
                 .AsNoTracking()
                 .Where(e => e.IsActive && e.IsPublished && e.StartTime >= DateTime.UtcNow.Date);
 
-            
             var visibleQuery = baseQuery.Where(e =>
                 e.Visibility == 0 ||
                 e.Visibility == 1 && e.GroupEvents.Any(ge => userGroupIds.Contains(ge.GroupId)) ||
                 e.Visibility == 2 && e.OrganizerId == userIdInt
             );
 
-           
             if (!string.IsNullOrEmpty(filters.City))
                 visibleQuery = visibleQuery.Where(e => EF.Functions.Like(e.City, $"%{filters.City}%"));
             if (!string.IsNullOrEmpty(filters.Country))
@@ -300,8 +262,9 @@ public class EventServices
                 visibleQuery = visibleQuery.Where(e => e.StartTime <= filters.EndDate.Value);
             if (filters.IsFreeOnly == true)
                 visibleQuery = visibleQuery.Where(e => e.IsFree);
+            if (filters.MinAge.HasValue)
+                visibleQuery = visibleQuery.Where(e => !e.AgeRestricted || e.MinAge <= filters.MinAge.Value);
 
-          
             var eventIds = await visibleQuery
                 .Select(e => e.Id)
                 .ToListAsync();
@@ -309,7 +272,6 @@ public class EventServices
             if (!eventIds.Any())
                 return new PagedResult<Event> { Items = new List<Event>(), Total = 0 };
 
-           
             var personalizedIds = await _context.EventInterests
                 .AsNoTracking()
                 .Where(ei => eventIds.Contains(ei.EventId) && userInterestIds.Contains(ei.InterestId))
@@ -320,10 +282,8 @@ public class EventServices
             if (!personalizedIds.Any() && userInterestIds.Any())
                 return new PagedResult<Event> { Items = new List<Event>(), Total = 0 };
 
-        
             var finalEventIds = userInterestIds.Any() ? personalizedIds : eventIds;
 
-         
             var events = await _context.Events
                 .AsNoTracking()
                 .Include(e => e.EventInterests).ThenInclude(ei => ei.Interest)
@@ -332,7 +292,6 @@ public class EventServices
                 .AsSplitQuery()
                 .ToListAsync();
 
-           
             if (userInterestIds.Any())
             {
                 events = events
@@ -349,18 +308,16 @@ public class EventServices
                     .ToList();
             }
 
-            
             var userProfile = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userIdInt);
             if (!string.IsNullOrEmpty(userProfile?.City))
             {
                 events = events
                     .OrderByDescending(e => e.City == userProfile.City)
                     .ThenByDescending(e => e.Country == userProfile.Country)
-                    .ThenBy(e => e.Id) 
+                    .ThenBy(e => e.Id)
                     .ToList();
             }
 
-          
             var total = events.Count;
             var pagedEvents = events
                 .Skip(filters.Offset)
@@ -404,6 +361,8 @@ public class EventServices
                 query = query.Where(e => EF.Functions.Like(e.Country, $"%{filters.Country}%"));
             if (filters.StartDate.HasValue)
                 query = query.Where(e => e.StartTime >= filters.StartDate.Value);
+            if (filters.MinAge.HasValue)
+                query = query.Where(e => !e.AgeRestricted || e.MinAge <= filters.MinAge.Value);
 
             var total = await query.CountAsync();
             var events = await query
@@ -478,24 +437,6 @@ public class EventServices
             if (organizer == null)
                 return AuthResult.Failure("Organizer not found.");
 
-            //var newEvent = new Event(
-            //    title: dto.Title,
-            //    description: dto.Description ?? "",
-            //    city: dto.City ?? "",
-            //    country: dto.Country ?? "",
-            //    location: dto.Location ?? "",
-            //    startTime: dto.StartDate,
-            //    endTime: dto.EndDate ?? dto.StartDate.AddHours(3),
-            //    organizerId: organizerId
-            //)
-            //{
-            //    Price = dto.Price,
-            //    CoverImage = dto.ImageUrl,
-            //    MaxAttendees = dto.MaxAttendees,
-            //    IsPublished = dto.IsPublished ?? true,
-            //    Visibility = dto.Visibility ?? 0
-            //};
-
             var newEvent = new Event(
     title: dto.Title,
     description: dto.Description ?? "",
@@ -512,16 +453,15 @@ public class EventServices
                 MaxAttendees = dto.MaxAttendees,
                 IsPublished = dto.IsPublished ?? true,
                 Visibility = dto.Visibility ?? 0,
-                // NEW: Precise venue fields
                 VenueName = dto.VenueName?.Trim(),
                 StreetAddress = dto.StreetAddress?.Trim(),
                 Latitude = dto.Latitude,
                 Longitude = dto.Longitude,
                 MapProviderPlaceId = dto.MapProviderPlaceId?.Trim(),
-                LocationVisibility = dto.LocationVisibility ?? 0
+                LocationVisibility = dto.LocationVisibility ?? 0,
+                AgeRestricted = dto.AgeRestricted ?? false,
+                MinAge = dto.AgeRestricted == true ? dto.MinAge : null
             };
-
-
 
             _context.Events.Add(newEvent);
             await _context.SaveChangesAsync();
@@ -597,21 +537,6 @@ public class EventServices
             if (existingEvent == null)
                 return AuthResult.Failure("Event not found or you don't have permission to edit it.");
 
-            //if (!string.IsNullOrEmpty(dto.Title)) existingEvent.Title = dto.Title;
-            //if (dto.Description != null) existingEvent.Description = dto.Description;
-            //if (!string.IsNullOrEmpty(dto.City)) existingEvent.City = dto.City;
-            //if (!string.IsNullOrEmpty(dto.Country)) existingEvent.Country = dto.Country;
-            //if (!string.IsNullOrEmpty(dto.Location)) existingEvent.Location = dto.Location;
-            //if (dto.StartDate.HasValue) existingEvent.StartTime = dto.StartDate.Value;
-            //if (dto.EndDate.HasValue) existingEvent.EndTime = dto.EndDate.Value;
-            //if (dto.Price.HasValue) existingEvent.Price = dto.Price;
-            //if (dto.ImageUrl != null) existingEvent.CoverImage = dto.ImageUrl;
-            //if (dto.MaxAttendees.HasValue) existingEvent.MaxAttendees = dto.MaxAttendees;
-            //if (dto.IsPublished.HasValue) existingEvent.IsPublished = dto.IsPublished.Value;
-
-            //existingEvent.UpdatedAt = DateTime.UtcNow;
-
-
             if (!string.IsNullOrEmpty(dto.Title)) existingEvent.Title = dto.Title;
             if (dto.Description != null) existingEvent.Description = dto.Description;
             if (!string.IsNullOrEmpty(dto.City)) existingEvent.City = dto.City;
@@ -623,16 +548,19 @@ public class EventServices
             if (dto.ImageUrl != null) existingEvent.CoverImage = dto.ImageUrl;
             if (dto.MaxAttendees.HasValue) existingEvent.MaxAttendees = dto.MaxAttendees;
             if (dto.IsPublished.HasValue) existingEvent.IsPublished = dto.IsPublished.Value;
-            // NEW: Venue field updates
             if (dto.VenueName != null) existingEvent.VenueName = dto.VenueName.Trim();
             if (dto.StreetAddress != null) existingEvent.StreetAddress = dto.StreetAddress.Trim();
             if (dto.Latitude.HasValue) existingEvent.Latitude = dto.Latitude.Value;
             if (dto.Longitude.HasValue) existingEvent.Longitude = dto.Longitude.Value;
             if (dto.MapProviderPlaceId != null) existingEvent.MapProviderPlaceId = dto.MapProviderPlaceId.Trim();
             if (dto.LocationVisibility.HasValue) existingEvent.LocationVisibility = dto.LocationVisibility.Value;
+            if (dto.AgeRestricted.HasValue)
+            {
+                existingEvent.AgeRestricted = dto.AgeRestricted.Value;
+                existingEvent.MinAge = dto.AgeRestricted.Value ? dto.MinAge : null;
+            }
 
             existingEvent.UpdatedAt = DateTime.UtcNow;
-
 
             if (dto.InterestIds != null)
             {
@@ -711,12 +639,8 @@ public class EventServices
         }
     }
 
-
-
-  
     public string GetSafeDisplayLocation(Event eventEntity, int? viewingUserId = null)
     {
-        
         if (viewingUserId.HasValue && viewingUserId.Value == eventEntity.OrganizerId)
         {
             return !string.IsNullOrEmpty(eventEntity.VenueName)
@@ -724,7 +648,6 @@ public class EventServices
                 : $"{eventEntity.City}, {eventEntity.Country}";
         }
 
-        
         return eventEntity.LocationVisibility switch
         {
             0 => !string.IsNullOrEmpty(eventEntity.VenueName)
@@ -739,19 +662,6 @@ public class EventServices
         };
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-    
     public async Task<EventWithTicketsDto> GetEventWithTicketsAsync(int eventId, int? userId = null)
     {
         var eventEntity = await _context.Events
@@ -799,6 +709,8 @@ public class EventServices
             Latitude = eventEntity.Latitude,
             Longitude = eventEntity.Longitude,
             LocationVisibility = eventEntity.LocationVisibility,
+            AgeRestricted = eventEntity.AgeRestricted,
+            MinAge = eventEntity.MinAge,
             DisplayLocation = GetSafeDisplayLocation(eventEntity, userId),
             CoverImage = eventEntity.CoverImage,
             Price = eventEntity.Price,
@@ -830,6 +742,8 @@ public class EventServices
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public int LocationVisibility { get; set; }
+        public bool AgeRestricted { get; set; }
+        public int? MinAge { get; set; }
         public string DisplayLocation { get; set; } = string.Empty;
         public string? CoverImage { get; set; }
         public decimal? Price { get; set; }
@@ -838,5 +752,4 @@ public class EventServices
         public List<TicketTierDto> AvailableTicketTiers { get; set; } = new();
         public bool IsOrganizer { get; set; }
     }
-
 }

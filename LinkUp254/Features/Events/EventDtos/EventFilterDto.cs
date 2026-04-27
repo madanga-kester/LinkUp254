@@ -41,4 +41,7 @@ public class EventFilterDto
     public string SortBy { get; set; } = "relevance";
 
 
+    public bool? AgeRestricted { get; set; }
+    public int? MinAge { get; set; }
+
 }

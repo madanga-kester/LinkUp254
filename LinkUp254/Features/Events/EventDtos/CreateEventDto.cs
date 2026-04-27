@@ -20,9 +20,10 @@ public class CreateEventDto
     [StringLength(500)]
     public string? Location { get; set; }
 
-   
 
 
+    public bool? AgeRestricted { get; set; }
+    public int? MinAge { get; set; }
 
 
     [StringLength(200)]
@@ -67,4 +68,6 @@ public class CreateEventDto
 
     
     public bool? IsFree { get; set; }
+
+
 }
