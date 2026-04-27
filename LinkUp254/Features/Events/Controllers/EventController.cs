@@ -8,9 +8,13 @@ using LinkUp254.Features.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Security.Claims;
+using System.Reflection;
 
-namespace LinkUp254.Features.Events;
+using Microsoft.AspNetCore.Hosting;
+
+namespace LinkUp254.Features.Events.Controllers;
 
 [ApiController]
 [Route("api/events")]
@@ -18,11 +22,13 @@ public class EventController : ControllerBase
 {
     private readonly EventServices _eventServices;
     private readonly LinkUpContext _context;
+    private readonly IWebHostEnvironment _env; 
 
-    public EventController(EventServices eventServices, LinkUpContext context)
+    public EventController(EventServices eventServices, LinkUpContext context, IWebHostEnvironment env)
     {
         _eventServices = eventServices;
         _context = context;
+        _env = env;
     }
 
     private int? GetAuthenticatedUserId()
@@ -155,6 +161,13 @@ public class EventController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
+
+
+
+
+
+
+
     [HttpGet("nearby")]
     [AllowAnonymous]
     public async Task<ActionResult<PagedResult<EventDetailDto>>> GetNearbyEvents(
@@ -224,7 +237,7 @@ public class EventController : ControllerBase
             OrganizerId = e.OrganizerId,
 
 
-            Organizer = e.Organizer != null ? new LinkUp254.Features.Shared.UserDto
+            Organizer = e.Organizer != null ? new Shared.UserDto
             {
                 Id = e.Organizer.Id,
                 FirstName = e.Organizer.FirstName,
@@ -271,4 +284,105 @@ public class EventController : ControllerBase
     }
 
     private double ToRadians(double degrees) => degrees * (Math.PI / 180);
+
+    [HttpGet("{id:int}/cover-image")]
+    public async Task<IActionResult> GetCoverImage(int id)
+    {
+        var eventEntity = await _context.Events
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id && e.IsActive);
+
+        if (eventEntity == null || string.IsNullOrEmpty(eventEntity.CoverImage))
+            return NotFound(new { message = "Cover image not found" });
+
+        return Ok(new { imageUrl = eventEntity.CoverImage });
+    }
+
+    [HttpPut("{id:int}/cover-image")]
+    [Authorize]
+    public async Task<IActionResult> UpdateCoverImage(int id, [FromBody] UpdateEventCoverImageDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(new { message = "Invalid request data", errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+
+        var userId = GetAuthenticatedUserId();
+        if (!userId.HasValue)
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _eventServices.UpdateEventCoverImageAsync(id, userId.Value, dto.ImageUrl);
+        return result.IsSuccess
+            ? Ok(new { isSuccess = true, message = result.Message })
+            : BadRequest(new { message = result.Message });
+    }
+
+    [HttpDelete("{id:int}/cover-image")]
+    [Authorize]
+    public async Task<IActionResult> DeleteCoverImage(int id)
+    {
+        var userId = GetAuthenticatedUserId();
+        if (!userId.HasValue)
+            return Unauthorized(new { message = "Authentication required" });
+
+        var result = await _eventServices.DeleteEventCoverImageAsync(id, userId.Value);
+        return result.IsSuccess
+     ? Ok(new { isSuccess = true, message = result.Message })
+     : BadRequest(new { message = result.Message });
+    }
+
+
+
+
+
+
+
+
+    [HttpPost("{id:int}/cover-image-upload")]
+    [Authorize]
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    public async Task<IActionResult> UploadCoverImageFile(int id, IFormFile file)
+    {
+        var userId = GetAuthenticatedUserId();
+        if (!userId.HasValue)
+            return Unauthorized(new { message = "Authentication required" });
+
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "No file provided" });
+
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
+        if (!allowedTypes.Contains(file.ContentType))
+            return BadRequest(new { message = "Only JPG, PNG, WebP allowed" });
+
+        if (file.Length > 5 * 1024 * 1024)
+            return BadRequest(new { message = "File too large (max 5MB)" });
+
+        var eventEntity = await _context.Events.FindAsync(id);
+        if (eventEntity == null || eventEntity.OrganizerId != userId.Value)
+            return NotFound(new { message = "Event not found" });
+
+
+       
+        var webRoot = Path.Combine(AppContext.BaseDirectory, "wwwroot");
+        var uploadsFolder = Path.Combine(webRoot, "uploads", "events");
+        Directory.CreateDirectory(uploadsFolder);
+
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var uniqueFileName = $"event_{id}_{Guid.NewGuid():N}{extension}";
+        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+
+
+
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var imageUrl = $"/uploads/events/{uniqueFileName}";
+        eventEntity.CoverImage = imageUrl;
+        eventEntity.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { imageUrl = imageUrl, message = "Image uploaded successfully" });
+    }
 }

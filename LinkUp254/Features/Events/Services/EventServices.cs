@@ -750,6 +750,60 @@ public class EventServices
         public bool IsFree { get; set; }
         public UserDto? Organizer { get; set; }
         public List<TicketTierDto> AvailableTicketTiers { get; set; } = new();
+
+
         public bool IsOrganizer { get; set; }
     }
+
+    public async Task<AuthResult> UpdateEventCoverImageAsync(int eventId, int userId, string imageUrl)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl))
+                return AuthResult.Failure("Image URL cannot be empty.");
+
+            var eventEntity = await _context.Events
+                .FirstOrDefaultAsync(e => e.Id == eventId && e.OrganizerId == userId && e.IsActive);
+
+            if (eventEntity == null)
+                return AuthResult.Failure("Event not found or you do not have permission.");
+
+            eventEntity.CoverImage = imageUrl;
+            eventEntity.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Cover image updated for event {EventId} by user {UserId}", eventId, userId);
+            return AuthResult.Success("Cover image updated successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "UpdateEventCoverImageAsync failed for event {EventId}", eventId);
+            return AuthResult.Failure("Failed to update cover image.");
+        }
+    }
+
+    public async Task<AuthResult> DeleteEventCoverImageAsync(int eventId, int userId)
+    {
+        try
+        {
+            var eventEntity = await _context.Events
+                .FirstOrDefaultAsync(e => e.Id == eventId && e.OrganizerId == userId && e.IsActive);
+
+            if (eventEntity == null)
+                return AuthResult.Failure("Event not found or you do not have permission.");
+
+            eventEntity.CoverImage = null;
+            eventEntity.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Cover image deleted for event {EventId} by user {UserId}", eventId, userId);
+            return AuthResult.Success("Cover image removed successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "DeleteEventCoverImageAsync failed for event {EventId}", eventId);
+            return AuthResult.Failure("Failed to delete cover image.");
+        }
+    }
 }
+    
