@@ -77,9 +77,25 @@ public class EventController : ControllerBase
         return result != null ? Ok(result) : NotFound(new { message = "Event not found" });
     }
 
+    //[HttpGet("my-events")]
+    //[Authorize]
+    //public async Task<IActionResult> GetMyEvents()
+    //{
+    //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+    //              ?? User.FindFirst("sub")?.Value;
+
+    //    if (string.IsNullOrEmpty(userId))
+    //        return Unauthorized(new { message = "Authentication required" });
+
+    //    var result = await _eventServices.GetEventsByOrganizerAsync(int.Parse(userId));
+    //    return Ok(result);
+    //}
+
+
+
     [HttpGet("my-events")]
     [Authorize]
-    public async Task<IActionResult> GetMyEvents()
+    public async Task<IActionResult> GetMyEvents([FromQuery] int limit = 9, [FromQuery] int offset = 0)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                   ?? User.FindFirst("sub")?.Value;
@@ -87,9 +103,27 @@ public class EventController : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Unauthorized(new { message = "Authentication required" });
 
-        var result = await _eventServices.GetEventsByOrganizerAsync(int.Parse(userId));
-        return Ok(result);
+        // Get all events for organizer (service returns List<Event>)
+        var allEvents = await _eventServices.GetEventsByOrganizerAsync(int.Parse(userId));
+
+        // Apply pagination manually
+        var total = allEvents.Count;
+        var pagedEvents = allEvents
+            .OrderByDescending(e => e.CreatedAt) // Show newest first
+            .Skip(offset)
+            .Take(limit)
+            .ToList();
+
+        return Ok(new PagedResult<Event>
+        {
+            Items = pagedEvents,
+            Total = total,
+            Limit = limit,
+            Offset = offset
+        });
     }
+
+
 
     [HttpPost]
     [Authorize]
