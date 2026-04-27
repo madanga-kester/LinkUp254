@@ -506,11 +506,47 @@ public class AuthServices
     }
 
     //  REFRESH TOKEN 
+    //public async Task<AuthResult> RefreshTokenAsync(RefreshTokenDto dto)
+    //{
+    //    try
+    //    {
+    //        return AuthResult.Failure("Refresh token logic not fully implemented yet.");
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        _logger.LogError(ex, "RefreshToken failed");
+    //        return AuthResult.Failure("Token refresh failed.");
+    //    }
+    //}
+
+
     public async Task<AuthResult> RefreshTokenAsync(RefreshTokenDto dto)
     {
         try
         {
-            return AuthResult.Failure("Refresh token logic not fully implemented yet.");
+            var user = await _context.Users.FirstOrDefaultAsync(u =>
+                u.RefreshToken == dto.RefreshToken &&
+                u.RefreshTokenExpiry > DateTime.UtcNow);
+
+            if (user == null)
+                return AuthResult.Failure("Invalid refresh token.");
+
+            var newToken = GenerateJwtToken(user);
+            var newRefreshToken = GenerateRefreshToken();
+
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return new AuthResult
+            {
+                IsSuccess = true,
+                Message = "Token refreshed.",
+                Token = newToken,
+                RefreshToken = newRefreshToken,
+                User = user
+            };
         }
         catch (Exception ex)
         {
@@ -518,6 +554,7 @@ public class AuthServices
             return AuthResult.Failure("Token refresh failed.");
         }
     }
+
 
     //  HELPERS 
     private async Task<string> GenerateAndSaveOtpAsync(string identifier, string purpose)

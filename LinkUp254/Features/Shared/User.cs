@@ -1,5 +1,6 @@
 ﻿using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Group.Messages;
+using System.ComponentModel.DataAnnotations;
 
 namespace LinkUp254.Features.Shared
 {
@@ -28,11 +29,14 @@ namespace LinkUp254.Features.Shared
         public string? Website { get; set; }
 
 
+        [StringLength(500)]
+        public string? RefreshToken { get; set; }
 
+        public DateTime? RefreshTokenExpiry { get; set; }
 
 
         // Navigations
-        
+
         public ICollection<Event> HostedEvents { get; set; } = new List<Event>();
         public ICollection<Event> EventsHosted { get; set; } = new List<Event>();
         public ICollection<EventAttendee> EventAttendees { get; set; } = new List<EventAttendee>();
