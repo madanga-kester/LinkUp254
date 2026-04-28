@@ -11,7 +11,7 @@ public class TicketTransaction : BaseEntity
 
     [Required]
     [ForeignKey(nameof(Ticket))]
-    public new int TicketId { get; set; }
+    public  int TicketId { get; set; }
     public Ticket Ticket { get; set; } = null!;
 
     // Payment provider details
@@ -65,8 +65,7 @@ public class TicketTransaction : BaseEntity
 
 public class TicketTransactionRefund : BaseEntity
 {
-    [Key]
-    public int Id { get; set; }
+   
 
     [Required]
     [ForeignKey(nameof(TicketTransaction))]

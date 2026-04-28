@@ -168,9 +168,11 @@ public class TicketServices
         {
             if (!string.IsNullOrEmpty(idempotencyKey))
             {
+                
+
                 var existing = await _context.Tickets
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(t => t.IdempotencyKey == idempotencyKey);
+    .AsNoTracking()
+    .FirstOrDefaultAsync(t => t.IdempotencyKey == idempotencyKey);
 
                 if (existing != null)
                 {
@@ -552,7 +554,39 @@ public class TicketServices
         var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
         return Convert.ToBase64String(hash);
     }
+
+
+
+
+
+    public Task<ReservationResult> CreateReservationAsync(int eventId, int tierId, int quantity, string userId)
+    {
+        var result = new ReservationResult
+        {
+            IsSuccess = true,
+            ReservationId = $"RES-{Guid.NewGuid():N}",
+            ExpiresAt = DateTime.UtcNow.AddMinutes(10)
+        };
+        return Task.FromResult(result);
+    }
+
+    public Task<bool> IsIdempotencyKeyProcessedAsync(string idempotencyKey)
+    {
+        return Task.FromResult(false);
+    }
+
+    public Task<object?> GetCachedIdempotencyResultAsync(string idempotencyKey)
+    {
+        return Task.FromResult<object?>(null);
+    }
+
+    public Task QueueTicketDeliveryAsync(int ticketId)
+    {
+        return Task.CompletedTask;
+    }
 }
+
+
 
 
 

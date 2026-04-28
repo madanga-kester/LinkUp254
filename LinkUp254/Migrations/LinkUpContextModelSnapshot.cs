@@ -336,6 +336,9 @@ namespace LinkUp254.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("AgeRestricted")
+                        .HasColumnType("bit");
+
                     b.Property<int>("AttendeeCount")
                         .HasColumnType("int");
 
@@ -392,6 +395,9 @@ namespace LinkUp254.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<int?>("MaxAttendees")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MinAge")
                         .HasColumnType("int");
 
                     b.Property<int>("OrganizerId")

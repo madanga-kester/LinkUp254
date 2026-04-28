@@ -63,12 +63,20 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddDbContext<LinkUpContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        sqlOptions => sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorNumbersToAdd: null)));
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+#if DEBUG
+    // Disable retry strategy in development to support manual transactions
+    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(0));
+#else
+    // Enable retry strategy in production for resilience
+    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(
+        maxRetryCount: 5,
+        maxRetryDelay: TimeSpan.FromSeconds(30),
+        errorNumbersToAdd: null));
+#endif
+});
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<AuthServices>();

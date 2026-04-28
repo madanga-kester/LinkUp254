@@ -6,6 +6,7 @@ using LinkUp254.Features.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -19,14 +20,20 @@ namespace LinkUp254.Features.Events.Controllers;
 [Route("api/[controller]")]
 public class TicketsController : ControllerBase
 {
+   
+
+
     private readonly TicketServices _ticketServices;
     private readonly LinkUpContext _context;
+    private readonly IConfiguration _configuration;
 
-    public TicketsController(TicketServices ticketServices, LinkUpContext context)
+    public TicketsController(TicketServices ticketServices, LinkUpContext context, IConfiguration configuration)
     {
         _ticketServices = ticketServices;
         _context = context;
+        _configuration = configuration;
     }
+
 
     [HttpPost("events/{eventId:int}/ticket-tiers")]
     [Authorize]
@@ -55,6 +62,9 @@ public class TicketsController : ControllerBase
         });
     }
 
+
+
+
     [HttpGet("events/{eventId:int}/ticket-tiers")]
     [AllowAnonymous]
     public async Task<ActionResult<List<TicketTierDto>>> GetAvailableTiers([FromRoute] int eventId)
@@ -62,6 +72,24 @@ public class TicketsController : ControllerBase
         var tiers = await _ticketServices.GetAvailableTiersAsync(eventId);
         return Ok(tiers);
     }
+
+    [HttpPost("events/{eventId:int}/reserve-tickets")]
+    [Authorize]
+    public async Task<ActionResult<object>> ReserveTickets([FromRoute] int eventId, [FromBody] ReserveTierDto dto)
+    {
+        var userId = GetCurrentUserIdString();
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        var reservation = await _ticketServices.CreateReservationAsync(eventId, dto.TierId, dto.Quantity, userId);
+        if (!reservation.IsSuccess)
+            return Conflict(new { message = reservation.Message });
+
+        return Ok(new { isSuccess = true, reservationId = reservation.ReservationId, expiresAt = reservation.ExpiresAt });
+    }
+
+
+
 
     [HttpPut("ticket-tiers/{id:int}")]
     [Authorize]
@@ -77,18 +105,43 @@ public class TicketsController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
+
+
+
+
+
+
+
+
+
+
+
     [HttpPost("purchase")]
     [Authorize]
     public async Task<ActionResult<PurchaseTicketResult>> PurchaseTickets(
-        [FromBody] PurchaseTicketDto dto,
-        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey = null)
+    [FromBody] PurchaseTicketDto dto,
+    [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey = null)
     {
         var userId = GetCurrentUserIdString();
         if (string.IsNullOrEmpty(userId))
             return Unauthorized(new { message = "Authentication required" });
 
         var effectiveIdempotencyKey = idempotencyKey ?? dto.IdempotencyKey;
+        if (string.IsNullOrEmpty(effectiveIdempotencyKey))
+            return BadRequest(new { message = "Idempotency-Key header is required for all purchases" });
+
+        var isDuplicate = await _ticketServices.IsIdempotencyKeyProcessedAsync(effectiveIdempotencyKey);
+        if (isDuplicate)
+        {
+            var cachedResult = await _ticketServices.GetCachedIdempotencyResultAsync(effectiveIdempotencyKey);
+            return Ok(cachedResult);
+        }
+
         var result = await _ticketServices.PurchaseTicketsAsync(dto, userId, effectiveIdempotencyKey);
+
+
+
+
 
         if (!result.IsSuccess)
         {
@@ -104,6 +157,14 @@ public class TicketsController : ControllerBase
 
         return Ok(result);
     }
+
+
+
+
+
+
+
+
 
     [HttpPost("payments/mpesa/callback")]
     [AllowAnonymous]
@@ -122,9 +183,13 @@ public class TicketsController : ControllerBase
             ProviderTransactionId = dto.MpesaReceiptNumber
         });
 
-        return result.IsSuccess
-            ? Ok(new { message = "Payment confirmed" })
-            : BadRequest(new { message = result.Message });
+        if (result.IsSuccess)
+        {
+            await _ticketServices.QueueTicketDeliveryAsync(ticketId.Value).ConfigureAwait(false);
+            return Ok(new { message = "Payment confirmed" });
+        }
+
+        return BadRequest(new { message = result.Message });
     }
 
     [HttpPost("{code}/validate")]
@@ -227,7 +292,21 @@ public class TicketsController : ControllerBase
                User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     }
 
-    private bool VerifyMpesaWebhookSignature(MpesaCallbackDto dto) => true;
+    private bool VerifyMpesaWebhookSignature(MpesaCallbackDto dto)
+    {
+        var secret = _configuration["Mpesa:WebhookSecret"];
+        if (string.IsNullOrEmpty(secret)) return true;
+
+        var timestamp = dto.TransactionDate.ToString("yyyyMMddHHmmss");
+        var payload = $"{dto.AccountReference}{dto.MpesaReceiptNumber}{dto.Amount}{timestamp}";
+
+        var computedHash = System.Security.Cryptography.HMACSHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(secret),
+            System.Text.Encoding.UTF8.GetBytes(payload));
+
+        var computedSignature = Convert.ToBase64String(computedHash);
+        return computedSignature.Equals(dto.Signature, StringComparison.Ordinal);
+    }
 
     private int? ExtractTicketIdFromReference(string accountReference)
     {

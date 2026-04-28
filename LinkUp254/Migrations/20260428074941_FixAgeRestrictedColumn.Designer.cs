@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LinkUp254.Migrations
 {
     [DbContext(typeof(LinkUpContext))]
-    [Migration("20260419090422_seeddataupdate")]
-    partial class seeddataupdate
+    [Migration("20260428074941_FixAgeRestrictedColumn")]
+    partial class FixAgeRestrictedColumn
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -79,6 +79,258 @@ namespace LinkUp254.Migrations
                     b.ToTable("OtpCodes");
                 });
 
+            modelBuilder.Entity("LinkUp254.Features.Events.Models.Ticket", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AttendeeEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<string>("AttendeeName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("AttendeePhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("BuyerEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<string>("BuyerName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("BuyerPhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("BuyerUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CheckInDeviceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("CheckedIn")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("CheckedInAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CheckedInByUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EventId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRefunded")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsStudentIdVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsTransferred")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Metadata")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("PaymentProvider")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("PaymentStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PricePaid")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ProviderTransactionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("PurchasedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("QRCodeData")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("QRCodeImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("RefundAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("RefundReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SmsDeliveryStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("SmsSent")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SmsSentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("StudentIdImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("TicketCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TicketStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("int");
+
+                    b.Property<int>("TicketTierId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("TransferredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TransferredToEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("VerificationStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId");
+
+                    b.HasIndex("TicketTierId");
+
+                    b.ToTable("Tickets");
+                });
+
+            modelBuilder.Entity("LinkUp254.Features.Events.Models.TicketTier", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("EventId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRefundable")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsTierActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsTransferable")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MaxPerOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MinPerOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("RefundDeadlineHours")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("RequirePhoneNumber")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("RequireStudentId")
+                        .HasColumnType("bit");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTime?>("SaleEndsAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("SaleStartsAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SoldCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId");
+
+                    b.ToTable("TicketTiers");
+                });
+
             modelBuilder.Entity("LinkUp254.Features.Events.models.Event", b =>
                 {
                     b.Property<int>("Id")
@@ -86,6 +338,9 @@ namespace LinkUp254.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("AgeRestricted")
+                        .HasColumnType("bit");
 
                     b.Property<int>("AttendeeCount")
                         .HasColumnType("int");
@@ -121,6 +376,9 @@ namespace LinkUp254.Migrations
                     b.Property<bool>("IsPublished")
                         .HasColumnType("bit");
 
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("float");
+
                     b.Property<int>("LikeCount")
                         .HasColumnType("int");
 
@@ -129,7 +387,20 @@ namespace LinkUp254.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int>("LocationVisibility")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<string>("MapProviderPlaceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<int?>("MaxAttendees")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MinAge")
                         .HasColumnType("int");
 
                     b.Property<int>("OrganizerId")
@@ -145,6 +416,10 @@ namespace LinkUp254.Migrations
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("StreetAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -155,6 +430,14 @@ namespace LinkUp254.Migrations
 
                     b.Property<int?>("UserId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Venue")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("VenueName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("ViewCount")
                         .HasColumnType("int");
@@ -229,7 +512,7 @@ namespace LinkUp254.Migrations
                     b.ToTable("EventInterests");
                 });
 
-            modelBuilder.Entity("LinkUp254.Features.Events.models.Ticket", b =>
+            modelBuilder.Entity("LinkUp254.Features.Events.models.TicketCheckIn", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -237,93 +520,187 @@ namespace LinkUp254.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("BuyerEmail")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("CheckInPoint")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("BuyerId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BuyerName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BuyerPhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("CheckInTime")
+                    b.Property<DateTime>("CheckedInAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<bool>("CheckedIn")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("CheckedInBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("EventId")
-                        .HasColumnType("int");
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsRefunded")
+                    b.Property<bool>("IsValid")
                         .HasColumnType("bit");
 
-                    b.Property<string>("PaymentId")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("Metadata")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
-                    b.Property<string>("PaymentStatus")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("ScannedByDeviceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<decimal?>("Price")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<string>("ScannedByUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<DateTime>("PurchaseDate")
+                    b.Property<DateTime?>("SyncedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("QRCodeImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Quantity")
+                    b.Property<int>("TicketId")
                         .HasColumnType("int");
 
-                    b.Property<string>("RefundReason")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("RefundedAt")
+                    b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("SeatNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("WasOffline")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("TicketCode")
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("TicketCheckIns");
+                });
+
+            modelBuilder.Entity("LinkUp254.Features.Events.models.TicketTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime>("InitiatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Metadata")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("MpesaPhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("MpesaReceiptNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("MpesaTransactionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ProviderTransactionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RefundReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("RefundedTransactionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("TicketId")
                         .HasColumnType("int");
 
-                    b.Property<string>("TicketStatus")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("TicketType")
+                    b.Property<string>("WebhookPayload")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("TicketTransactions");
+                });
+
+            modelBuilder.Entity("LinkUp254.Features.Events.models.TicketTransactionRefund", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProviderRefundId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Reason")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("RefundAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TransactionId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("VerificationStatus")
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("EventId");
+                    b.HasIndex("TransactionId");
 
-                    b.ToTable("Tickets");
+                    b.ToTable("TicketTransactionRefund");
                 });
 
             modelBuilder.Entity("LinkUp254.Features.Gallery.Models.GroupGallery", b =>
@@ -456,7 +833,6 @@ namespace LinkUp254.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("UploadedAt")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2");
 
                     b.Property<int>("UploadedBy")
@@ -1074,6 +1450,13 @@ namespace LinkUp254.Migrations
                     b.Property<string>("ProfilePicture")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("RefreshToken")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("RefreshTokenExpiry")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1140,6 +1523,36 @@ namespace LinkUp254.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LinkUp254.Features.Events.Models.Ticket", b =>
+                {
+                    b.HasOne("LinkUp254.Features.Events.models.Event", "Event")
+                        .WithMany("Tickets")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LinkUp254.Features.Events.Models.TicketTier", "TicketTier")
+                        .WithMany("Tickets")
+                        .HasForeignKey("TicketTierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("TicketTier");
+                });
+
+            modelBuilder.Entity("LinkUp254.Features.Events.Models.TicketTier", b =>
+                {
+                    b.HasOne("LinkUp254.Features.Events.models.Event", "Event")
+                        .WithMany("TicketTiers")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+                });
+
             modelBuilder.Entity("LinkUp254.Features.Events.models.Event", b =>
                 {
                     b.HasOne("LinkUp254.Features.Shared.User", "Organizer")
@@ -1193,15 +1606,37 @@ namespace LinkUp254.Migrations
                     b.Navigation("Interest");
                 });
 
-            modelBuilder.Entity("LinkUp254.Features.Events.models.Ticket", b =>
+            modelBuilder.Entity("LinkUp254.Features.Events.models.TicketCheckIn", b =>
                 {
-                    b.HasOne("LinkUp254.Features.Events.models.Event", "Event")
-                        .WithMany("Tickets")
-                        .HasForeignKey("EventId")
+                    b.HasOne("LinkUp254.Features.Events.Models.Ticket", "Ticket")
+                        .WithMany()
+                        .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Event");
+                    b.Navigation("Ticket");
+                });
+
+            modelBuilder.Entity("LinkUp254.Features.Events.models.TicketTransaction", b =>
+                {
+                    b.HasOne("LinkUp254.Features.Events.Models.Ticket", "Ticket")
+                        .WithMany()
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ticket");
+                });
+
+            modelBuilder.Entity("LinkUp254.Features.Events.models.TicketTransactionRefund", b =>
+                {
+                    b.HasOne("LinkUp254.Features.Events.models.TicketTransaction", "Transaction")
+                        .WithMany("Refunds")
+                        .HasForeignKey("TransactionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Transaction");
                 });
 
             modelBuilder.Entity("LinkUp254.Features.Gallery.Models.GroupGallery", b =>
@@ -1450,6 +1885,11 @@ namespace LinkUp254.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LinkUp254.Features.Events.Models.TicketTier", b =>
+                {
+                    b.Navigation("Tickets");
+                });
+
             modelBuilder.Entity("LinkUp254.Features.Events.models.Event", b =>
                 {
                     b.Navigation("EventAttendees");
@@ -1458,7 +1898,14 @@ namespace LinkUp254.Migrations
 
                     b.Navigation("GroupEvents");
 
+                    b.Navigation("TicketTiers");
+
                     b.Navigation("Tickets");
+                });
+
+            modelBuilder.Entity("LinkUp254.Features.Events.models.TicketTransaction", b =>
+                {
+                    b.Navigation("Refunds");
                 });
 
             modelBuilder.Entity("LinkUp254.Features.Groups.Models.Group", b =>

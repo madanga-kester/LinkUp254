@@ -9,6 +9,13 @@
     <UserSecretsId>766bd7d4-a4aa-4049-ba79-6dee5b9db3be</UserSecretsId>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Features\Event\**" />
+    <Content Remove="Features\Event\**" />
+    <EmbeddedResource Remove="Features\Event\**" />
+    <None Remove="Features\Event\**" />
+  </ItemGroup>
+
   <ItemGroup><!-- REMOVED: <Compile Remove="Features\Groups\Models\GroupMessage.cs" /> -->
   
     <Compile Remove="Features\Shared\SeedData.cs" />
@@ -38,7 +45,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\Event\DTOs\" />
     <Folder Include="Features\Groups\Messages\DTOs\" />
   </ItemGroup>
 
