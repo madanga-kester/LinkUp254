@@ -316,6 +316,35 @@ public class TicketsController : ControllerBase
         var idPart = accountReference.Substring("LINKUP-".Length);
         return int.TryParse(idPart, out var id) ? id : null;
     }
+
+
+
+
+
+    [HttpGet("{code}/pdf")]
+    [AllowAnonymous]
+    public async Task<IActionResult> DownloadTicketPdf([FromRoute] string code)
+    {
+        var ticket = await _context.Tickets
+            .Include(t => t.Event)
+            .Include(t => t.TicketTier)
+            .FirstOrDefaultAsync(t => t.TicketCode == code);
+
+        if (ticket == null)
+            return NotFound(new { message = "Ticket not found" });
+
+        //  Generate PDF using QuestPDF, iTextSharp, or similar
+        // For now, returning placeholder in  JSON
+        return Ok(new
+        {
+            message = "PDF generation endpoint - implement with QuestPDF or similar",
+            ticketCode = ticket.TicketCode,
+            eventTitle = ticket.Event?.Title,
+            attendeeName = ticket.AttendeeName ?? ticket.BuyerName
+        });
+    }
+
+
 }
 
 
