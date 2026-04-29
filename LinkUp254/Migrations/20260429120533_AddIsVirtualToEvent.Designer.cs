@@ -4,6 +4,7 @@ using LinkUp254.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LinkUp254.Migrations
 {
     [DbContext(typeof(LinkUpContext))]
-    partial class LinkUpContextModelSnapshot : ModelSnapshot
+    [Migration("20260429120533_AddIsVirtualToEvent")]
+    partial class AddIsVirtualToEvent
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -74,77 +77,6 @@ namespace LinkUp254.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("OtpCodes");
-                });
-
-            modelBuilder.Entity("LinkUp254.Features.Events.Models.EventLike", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("EventId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("LikedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("EventId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("EventLikes");
-                });
-
-            modelBuilder.Entity("LinkUp254.Features.Events.Models.EventRsvp", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("EventId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("GuestCount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.Property<DateTime>("RsvpedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("going");
-
-                    b.Property<int?>("TicketTierId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TicketTierId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("EventId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("EventRsvps");
                 });
 
             modelBuilder.Entity("LinkUp254.Features.Events.Models.Ticket", b =>
@@ -1594,51 +1526,6 @@ namespace LinkUp254.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("LinkUp254.Features.Events.Models.EventLike", b =>
-                {
-                    b.HasOne("LinkUp254.Features.Events.models.Event", "Event")
-                        .WithMany("Likes")
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LinkUp254.Features.Shared.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Event");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("LinkUp254.Features.Events.Models.EventRsvp", b =>
-                {
-                    b.HasOne("LinkUp254.Features.Events.models.Event", "Event")
-                        .WithMany("Rsvps")
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LinkUp254.Features.Events.Models.TicketTier", "TicketTier")
-                        .WithMany()
-                        .HasForeignKey("TicketTierId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("LinkUp254.Features.Shared.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Event");
-
-                    b.Navigation("TicketTier");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("LinkUp254.Features.Events.Models.Ticket", b =>
                 {
                     b.HasOne("LinkUp254.Features.Events.models.Event", "Event")
@@ -2013,10 +1900,6 @@ namespace LinkUp254.Migrations
                     b.Navigation("EventInterests");
 
                     b.Navigation("GroupEvents");
-
-                    b.Navigation("Likes");
-
-                    b.Navigation("Rsvps");
 
                     b.Navigation("TicketTiers");
 

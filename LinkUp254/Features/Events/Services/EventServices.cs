@@ -188,6 +188,34 @@ public class EventServices
             if (filters.MinAge.HasValue)
                 query = query.Where(e => !e.AgeRestricted || e.MinAge <= filters.MinAge.Value);
 
+
+
+
+
+       
+
+            //  NEW: Event type filters (virtual/in-person)
+            if (filters.IsVirtual == true)
+                query = query.Where(e => e.IsVirtual); // Assumes Event model has IsVirtual property
+
+            if (filters.IsInPerson == true)
+                query = query.Where(e => !e.IsVirtual); // Or add IsInPerson property to Event model
+
+            //  NEW: Interest IDs filter (parse comma-separated string)
+            if (!string.IsNullOrEmpty(filters.InterestIds))
+            {
+                var interestIdList = filters.InterestIds
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(int.Parse)
+                    .ToList();
+
+                query = query.Where(e => e.EventInterests
+                    .Any(ei => interestIdList.Contains(ei.InterestId)));
+            }
+
+
+
+
             query = filters.SortBy switch
             {
                 "date_asc" => query.OrderBy(e => e.StartTime),

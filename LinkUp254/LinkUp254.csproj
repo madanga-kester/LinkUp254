@@ -11,9 +11,13 @@
 
   <ItemGroup>
     <Compile Remove="Features\Event\**" />
+    <Compile Remove="Features\GroupCoverImage\**" />
     <Content Remove="Features\Event\**" />
+    <Content Remove="Features\GroupCoverImage\**" />
     <EmbeddedResource Remove="Features\Event\**" />
+    <EmbeddedResource Remove="Features\GroupCoverImage\**" />
     <None Remove="Features\Event\**" />
+    <None Remove="Features\GroupCoverImage\**" />
   </ItemGroup>
 
   <ItemGroup><!-- REMOVED: <Compile Remove="Features\Groups\Models\GroupMessage.cs" /> -->

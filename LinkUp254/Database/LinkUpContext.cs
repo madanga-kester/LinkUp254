@@ -21,8 +21,15 @@ namespace LinkUp254.Database
 
 
         public DbSet<EventAttendee> EventAttendees { get; set; } = null!;
+
        
 
+      
+        public DbSet<EventLike> EventLikes { get; set; } = null!;
+        public DbSet<EventRsvp> EventRsvps { get; set; } = null!;
+       
+
+       
 
 
 
@@ -440,6 +447,60 @@ namespace LinkUp254.Database
                 entity.Property(gg => gg.IsActive).HasDefaultValue(true);
 
             });
+
+
+
+
+
+
+
+
+
+
+
+            //  EVENT LIKE configuration
+            modelBuilder.Entity<EventLike>(entity =>
+            {
+                entity.HasKey(el => el.Id);
+                entity.HasIndex(el => new { el.EventId, el.UserId }).IsUnique();
+
+                entity.HasOne(el => el.Event)
+                      .WithMany(e => e.Likes)
+                      .HasForeignKey(el => el.EventId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(el => el.User)
+                      .WithMany() // Or .WithMany(u => u.Likes) if i add that to User model
+                      .HasForeignKey(el => el.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            //  EVENT RSVP configuration
+            modelBuilder.Entity<EventRsvp>(entity =>
+            {
+                entity.HasKey(er => er.Id);
+                entity.HasIndex(er => new { er.EventId, er.UserId }).IsUnique();
+
+                entity.Property(er => er.Status).HasMaxLength(50).HasDefaultValue("going");
+                entity.Property(er => er.GuestCount).HasDefaultValue(1);
+
+                entity.HasOne(er => er.Event)
+                      .WithMany(e => e.Rsvps)
+                      .HasForeignKey(er => er.EventId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(er => er.User)
+                      .WithMany() 
+                      .HasForeignKey(er => er.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(er => er.TicketTier)
+                     .WithMany()
+                     .HasForeignKey(er => er.TicketTierId)
+                     .OnDelete(DeleteBehavior.NoAction);  
+            });
+
+
 
 
 

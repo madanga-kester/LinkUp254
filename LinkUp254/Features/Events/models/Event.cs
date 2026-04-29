@@ -31,7 +31,8 @@ public class Event : BaseEntity
     [StringLength(500)]
     public string Location { get; set; } = string.Empty;
 
-
+    
+    public bool IsVirtual { get; set; } = false;
 
     public bool AgeRestricted { get; set; } = false;
     public int? MinAge { get; set; }
@@ -88,7 +89,13 @@ public class Event : BaseEntity
     // Content Visibility: 0=Public, 1=GroupOnly, 2=Private
     public int Visibility { get; set; } = 0;
 
-    // Navigation properties
+
+
+    
+    
+    public ICollection<EventLike> Likes { get; set; } = new List<EventLike>();
+    public ICollection<EventRsvp> Rsvps { get; set; } = new List<EventRsvp>();
+
     public ICollection<EventAttendee> EventAttendees { get; set; } = new List<EventAttendee>();
     public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     public ICollection<EventInterest> EventInterests { get; set; } = new List<EventInterest>();

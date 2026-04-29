@@ -318,6 +318,40 @@ public class TicketsController : ControllerBase
     }
 
 
+    [HttpGet("my-tickets")]
+    [Authorize]
+    public async Task<ActionResult<List<TicketDetailsDto>>> GetMyTickets()
+    {
+        var userId = GetCurrentUserIdString();
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { message = "Authentication required" });
+
+        //  Simplified: Only return tickets where this user is the buyer
+        var tickets = await _context.Tickets
+            .Include(t => t.Event)
+            .Include(t => t.TicketTier)
+            .Where(t => t.BuyerUserId == userId)  // Just check buyer, not attendee email
+            .OrderByDescending(t => t.PurchasedAt)
+            .Select(t => new TicketDetailsDto
+            {
+                TicketCode = t.TicketCode,
+                EventTitle = t.Event.Title,
+                TicketTier = t.TicketTier.Name,
+                AttendeeName = t.AttendeeName ?? t.BuyerName,
+                EventStartTime = t.Event.StartTime,
+                Venue = t.Event.Venue,
+                QRCodeImageUrl = t.QRCodeImageUrl,
+                IsCheckedIn = t.CheckedIn,
+                Status = t.TicketStatus.ToString().ToLowerInvariant(),
+                PricePaid = t.PricePaid,
+                PurchasedAt = t.PurchasedAt,
+                TicketStatus = t.TicketStatus.ToString().ToLowerInvariant()
+            })
+            .ToListAsync();
+
+        return Ok(tickets);
+    }
+
 
 
 
@@ -343,6 +377,8 @@ public class TicketsController : ControllerBase
             attendeeName = ticket.AttendeeName ?? ticket.BuyerName
         });
     }
+
+
 
 
 }

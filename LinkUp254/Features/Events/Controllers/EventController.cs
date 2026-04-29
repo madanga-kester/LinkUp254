@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Security.Claims;
 using System.Reflection;
+using Microsoft.Extensions.Logging; 
 
 using Microsoft.AspNetCore.Hosting;
 
@@ -21,15 +22,34 @@ namespace LinkUp254.Features.Events.Controllers;
 public class EventController : ControllerBase
 {
     private readonly EventServices _eventServices;
+    private readonly EventEngagementServices _engagementServices;
     private readonly LinkUpContext _context;
-    private readonly IWebHostEnvironment _env; 
+    private readonly IWebHostEnvironment _env;
+    private readonly ILogger<EventController> _logger;
 
-    public EventController(EventServices eventServices, LinkUpContext context, IWebHostEnvironment env)
+    
+  
+
+
+
+
+    public EventController(
+    EventServices eventServices,
+    EventEngagementServices engagementServices,
+    LinkUpContext context,
+    IWebHostEnvironment env,
+    ILogger<EventController> logger) 
     {
         _eventServices = eventServices;
+        _engagementServices = engagementServices;
         _context = context;
         _env = env;
+        _logger = logger; 
     }
+
+
+
+
 
     private int? GetAuthenticatedUserId()
     {
@@ -73,23 +93,13 @@ public class EventController : ControllerBase
     public async Task<IActionResult> GetEventById(int id)
     {
         var userId = GetAuthenticatedUserId();
+
+        // Track view count (fire-and-forget, non-critical)
+        _ = _engagementServices.IncrementViewCountAsync(id); 
+
         var result = await _eventServices.GetEventWithTicketsAsync(id, userId);
         return result != null ? Ok(result) : NotFound(new { message = "Event not found" });
     }
-
-    //[HttpGet("my-events")]
-    //[Authorize]
-    //public async Task<IActionResult> GetMyEvents()
-    //{
-    //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-    //              ?? User.FindFirst("sub")?.Value;
-
-    //    if (string.IsNullOrEmpty(userId))
-    //        return Unauthorized(new { message = "Authentication required" });
-
-    //    var result = await _eventServices.GetEventsByOrganizerAsync(int.Parse(userId));
-    //    return Ok(result);
-    //}
 
 
 
@@ -179,6 +189,13 @@ public class EventController : ControllerBase
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
 
+    
+
+
+
+
+
+
     [HttpDelete("{id:int}")]
     [Authorize]
     public async Task<IActionResult> DeleteEvent(int id)
@@ -194,6 +211,168 @@ public class EventController : ControllerBase
         var result = await _eventServices.DeleteEventAsync(id, intUserId);
         return result.IsSuccess ? Ok(result) : BadRequest(result);
     }
+
+    //  LIKE ENDPOINTS
+
+    [HttpPost("{id:int}/like")]
+    [Authorize]
+    public async Task<IActionResult> LikeEvent(int id)
+    {
+        var userId = GetAuthenticatedUserId();
+        if (!userId.HasValue)
+            return Unauthorized(new { message = "Authentication required" });
+
+        var success = await _engagementServices.ToggleLikeAsync(id, userId.Value, like: true);
+        return success
+            ? Ok(new { isSuccess = true, message = "Event liked successfully" })
+            : BadRequest(new { message = "Failed to like event" });
+    }
+
+    [HttpDelete("{id:int}/like")]
+    [Authorize]
+    public async Task<IActionResult> UnlikeEvent(int id)
+    {
+        var userId = GetAuthenticatedUserId();
+        if (!userId.HasValue)
+            return Unauthorized(new { message = "Authentication required" });
+
+        var success = await _engagementServices.ToggleLikeAsync(id, userId.Value, like: false);
+        return success
+            ? Ok(new { isSuccess = true, message = "Event unliked successfully" })
+            : BadRequest(new { message = "Failed to unlike event" });
+    }
+
+   
+
+
+
+
+
+
+    [HttpGet("{id:int}/like/status")]
+    [Authorize]
+    public async Task<IActionResult> GetLikeStatus(int id)
+    {
+        var userId = GetAuthenticatedUserId();
+        if (!userId.HasValue)
+            return Unauthorized(new { message = "Authentication required" });
+
+        var isLiked = await _engagementServices.IsLikedByUserAsync(id, userId.Value);
+        var likeCount = await _engagementServices.GetLikeCountAsync(id);
+
+        return Ok(new { isLiked, likeCount });
+    }
+
+    //  RSVP ENDPOINTS
+
+    [HttpPost("{id:int}/rsvp")]
+    [Authorize]
+    public async Task<IActionResult> RsvpEvent(int id, [FromBody] RsvpRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(new { message = "Invalid request data", errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+
+        var userId = GetAuthenticatedUserId();
+        if (!userId.HasValue)
+            return Unauthorized(new { message = "Authentication required" });
+
+        try
+        {
+            var result = await _engagementServices.UpsertRsvpAsync(id, userId.Value, request);
+            return Ok(new
+            {
+                isSuccess = true,
+                message = "RSVP updated successfully",
+                rsvp = result
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Handle business logic errors (event full, not found, etc.)
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "RsvpEvent failed for user {UserId} on event {EventId}", userId, id);
+            return StatusCode(500, new { message = "Failed to process RSVP" });
+        }
+    }
+
+    [HttpDelete("{id:int}/rsvp")]
+    [Authorize]
+    public async Task<IActionResult> CancelRsvpEvent(int id)
+    {
+        var userId = GetAuthenticatedUserId();
+        if (!userId.HasValue)
+            return Unauthorized(new { message = "Authentication required" });
+
+        var success = await _engagementServices.CancelRsvpAsync(id, userId.Value);
+        return success
+            ? Ok(new { isSuccess = true, message = "RSVP cancelled successfully" })
+            : BadRequest(new { message = "Failed to cancel RSVP" });
+    }
+
+
+
+
+
+
+
+
+
+
+
+    [HttpGet("{id:int}/rsvp/status")]
+    [Authorize]
+    public async Task<IActionResult> GetUserRsvpStatus(int id)
+    {
+        var userId = GetAuthenticatedUserId();
+        if (!userId.HasValue)
+            return Unauthorized(new { message = "Authentication required" });
+
+        var rsvp = await _engagementServices.GetUserRsvpAsync(id, userId.Value);
+        var goingCount = await _engagementServices.GetRsvpCountAsync(id, "going");
+
+        return Ok(new
+        {
+            rsvp,
+            goingCount,
+            isGoing = rsvp?.Status == "going"
+        });
+    }
+
+    // SOCIAL CONTEXT ENDPOINT
+
+    [HttpGet("{id:int}/social")]
+    [Authorize]
+    public async Task<IActionResult> GetEventSocialContext(int id)
+    {
+        var userId = GetAuthenticatedUserId();
+        if (!userId.HasValue)
+            return Unauthorized(new { message = "Authentication required" });
+
+        try
+        {
+            var context = await _engagementServices.GetSocialContextAsync(id, userId.Value);
+            return Ok(context);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetEventSocialContext failed for user {UserId} on event {EventId}", userId, id);
+            // Return safe defaults on error (service already handles this, but extra safety)
+            return Ok(new SocialContextDto
+            {
+                FriendsGoing = 0,
+                NetworkInterest = "low",
+                LiveViewers = null,
+                MutualFriends = new List<UserSummaryDto>()
+            });
+        }
+    }
+
+
+
+
 
 
 
@@ -214,6 +393,10 @@ public class EventController : ControllerBase
         [FromQuery] DateTime? endDate = null,
         [FromQuery] bool? isFreeOnly = null,
         [FromQuery] int? minAge = null,
+        [FromQuery] bool? isVirtual = null,        
+        [FromQuery] bool? isInPerson = null,       
+        [FromQuery] string? interestIds = null,
+
         [FromQuery] int limit = 20,
         [FromQuery] int offset = 0,
         [FromQuery] string? sortBy = "distance")
@@ -232,6 +415,9 @@ public class EventController : ControllerBase
             EndDate = endDate,
             IsFreeOnly = isFreeOnly,
             MinAge = minAge,
+            IsVirtual = isVirtual,      
+            IsInPerson = isInPerson,    
+            InterestIds = interestIds,  
             Limit = limit,
             Offset = offset,
             SortBy = sortBy

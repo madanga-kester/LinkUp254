@@ -243,4 +243,7 @@ public class TicketDetailsDto
     public string? QRCodeImageUrl { get; set; }
     public bool IsCheckedIn { get; set; }
     public string Status { get; set; } = string.Empty;
+    public decimal PricePaid { get;  set; }
+    public DateTime PurchasedAt { get;  set; }
+    public string TicketStatus { get;  set; }
 }

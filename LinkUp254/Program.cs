@@ -91,9 +91,10 @@ builder.Services.AddScoped<LinkUp254.Features.Groups.GroupServices>();
 
 builder.Services.AddScoped<LinkUp254.Features.Groups.GroupServices>();
 builder.Services.AddScoped<LinkUp254.Features.GroupCoverImage.Services.IGroupCoverImageServices,
-                             LinkUp254.Features.GroupCoverImage.Services.GroupCoverImageServices>(); 
+                             LinkUp254.Features.GroupCoverImage.Services.GroupCoverImageServices>();
 
 
+builder.Services.AddScoped<EventEngagementServices>();
 builder.Services.AddScoped<IGalleryServices, GalleryServices>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
