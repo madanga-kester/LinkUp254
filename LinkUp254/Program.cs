@@ -213,10 +213,18 @@ else
 
 app.UseHttpsRedirection();
 
+
+
+
+var webRootPath = builder.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+if (!Directory.Exists(webRootPath))
+{
+    Directory.CreateDirectory(webRootPath);
+}
+
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(
-        builder.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")),
+    FileProvider = new PhysicalFileProvider(webRootPath),
     RequestPath = "",
     OnPrepareResponse = ctx =>
     {
@@ -239,6 +247,10 @@ app.UseStaticFiles(new StaticFileOptions
         }
     }
 });
+
+
+
+
 
 app.UseCors("AllowFrontend");
 

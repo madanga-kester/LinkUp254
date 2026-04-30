@@ -1,5 +1,4 @@
-﻿// src/Features/Events/Services/EventEngagementServices.cs
-using LinkUp254.Database;
+﻿using LinkUp254.Database;
 using LinkUp254.Features.Events.DTOs;
 using LinkUp254.Features.Events.Models;
 using LinkUp254.Features.Shared;
@@ -12,10 +11,6 @@ using System.Threading.Tasks;
 
 namespace LinkUp254.Features.Events.Services;
 
-/// <summary>
-/// Handles user engagement actions: likes, RSVPs, social context, view tracking.
-/// Separated from EventServices for maintainability and single responsibility.
-/// </summary>
 public class EventEngagementServices
 {
     private readonly LinkUpContext _context;
@@ -29,20 +24,12 @@ public class EventEngagementServices
         _logger = logger;
     }
 
-    #region 🔹 Likes
+    #region Likes
 
-    /// <summary>
-    /// Toggle like status for an event by a user.
-    /// </summary>
-    /// <param name="eventId">The event ID</param>
-    /// <param name="userId">The user ID</param>
-    /// <param name="like">True to like, false to unlike</param>
-    /// <returns>True if operation succeeded</returns>
     public async Task<bool> ToggleLikeAsync(int eventId, int userId, bool like)
     {
         try
         {
-            // Verify event exists and is active
             var eventExists = await _context.Events
                 .AsNoTracking()
                 .AnyAsync(e => e.Id == eventId && e.IsActive && e.IsPublished);
@@ -55,7 +42,6 @@ public class EventEngagementServices
 
             if (like)
             {
-                // Add like if not already present
                 var existing = await _context.EventLikes
                     .AnyAsync(el => el.EventId == eventId && el.UserId == userId);
 
@@ -68,7 +54,6 @@ public class EventEngagementServices
                         LikedAt = DateTime.UtcNow
                     });
 
-                    // Denormalize: increment like count for faster reads
                     await _context.Events
                         .Where(e => e.Id == eventId)
                         .ExecuteUpdateAsync(setters =>
@@ -77,7 +62,6 @@ public class EventEngagementServices
             }
             else
             {
-                // Remove like if present
                 var likeEntity = await _context.EventLikes
                     .FirstOrDefaultAsync(el => el.EventId == eventId && el.UserId == userId);
 
@@ -85,7 +69,6 @@ public class EventEngagementServices
                 {
                     _context.EventLikes.Remove(likeEntity);
 
-                    // Denormalize: decrement like count (ensure non-negative)
                     await _context.Events
                         .Where(e => e.Id == eventId && e.LikeCount > 0)
                         .ExecuteUpdateAsync(setters =>
@@ -106,9 +89,6 @@ public class EventEngagementServices
         }
     }
 
-    /// <summary>
-    /// Check if a user has liked an event.
-    /// </summary>
     public async Task<bool> IsLikedByUserAsync(int eventId, int userId)
     {
         try
@@ -124,9 +104,6 @@ public class EventEngagementServices
         }
     }
 
-    /// <summary>
-    /// Get total like count for an event (uses denormalized count for performance).
-    /// </summary>
     public async Task<int> GetLikeCountAsync(int eventId)
     {
         try
@@ -146,16 +123,12 @@ public class EventEngagementServices
 
     #endregion
 
-    #region 🔹 RSVPs
+    #region RSVPs
 
-    /// <summary>
-    /// Create or update an RSVP for an event.
-    /// </summary>
     public async Task<EventRsvpDto> UpsertRsvpAsync(int eventId, int userId, RsvpRequest request)
     {
         try
         {
-            // Verify event exists, is active, and not full
             var eventEntity = await _context.Events
                 .AsNoTracking()
                 .FirstOrDefaultAsync(e => e.Id == eventId && e.IsActive && e.IsPublished);
@@ -166,7 +139,6 @@ public class EventEngagementServices
                 throw new InvalidOperationException("Event not found or not available for RSVP");
             }
 
-            // Check capacity if event has max attendees
             if (eventEntity.MaxAttendees.HasValue)
             {
                 var currentRsvps = await _context.EventRsvps
@@ -179,7 +151,6 @@ public class EventEngagementServices
                 }
             }
 
-            // Find existing RSVP or create new
             var rsvp = await _context.EventRsvps
                 .FirstOrDefaultAsync(r => r.EventId == eventId && r.UserId == userId);
 
@@ -199,15 +170,12 @@ public class EventEngagementServices
             }
             else
             {
-                // Update existing
                 if (rsvp.Status != request.Status)
                 {
-                    // If changing from "going" to something else, decrement attendee count
                     if (rsvp.Status == "going" && request.Status != "going")
                     {
                         await DecrementAttendeeCountAsync(eventId);
                     }
-                    // If changing to "going" from something else, increment
                     else if (rsvp.Status != "going" && request.Status == "going")
                     {
                         await IncrementAttendeeCountAsync(eventId);
@@ -217,10 +185,9 @@ public class EventEngagementServices
                 rsvp.Status = request.Status;
                 rsvp.GuestCount = request.GuestCount ?? rsvp.GuestCount;
                 rsvp.TicketTierId = request.TicketTierId;
-                rsvp.RsvpedAt = DateTime.UtcNow; // Update timestamp
+                rsvp.RsvpedAt = DateTime.UtcNow;
             }
 
-            // If status is "going" and it's a new RSVP, increment attendee count
             if (isNew && request.Status == "going")
             {
                 await IncrementAttendeeCountAsync(eventId);
@@ -243,13 +210,10 @@ public class EventEngagementServices
         catch (Exception ex)
         {
             _logger.LogError(ex, "UpsertRsvpAsync failed for user {UserId} on event {EventId}", userId, eventId);
-            throw; // Re-throw to let controller handle error response
+            throw;
         }
     }
 
-    /// <summary>
-    /// Cancel an RSVP (set status to "none" or delete).
-    /// </summary>
     public async Task<bool> CancelRsvpAsync(int eventId, int userId)
     {
         try
@@ -260,10 +224,9 @@ public class EventEngagementServices
             if (rsvp == null)
             {
                 _logger.LogWarning("CancelRsvpAsync: No RSVP found for user {UserId} on event {EventId}", userId, eventId);
-                return true; // Already cancelled, consider success
+                return true;
             }
 
-            // If was "going", decrement attendee count
             if (rsvp.Status == "going")
             {
                 await DecrementAttendeeCountAsync(eventId);
@@ -282,9 +245,6 @@ public class EventEngagementServices
         }
     }
 
-    /// <summary>
-    /// Get a user's RSVP status for an event.
-    /// </summary>
     public async Task<EventRsvpDto?> GetUserRsvpAsync(int eventId, int userId)
     {
         try
@@ -311,9 +271,6 @@ public class EventEngagementServices
         }
     }
 
-    /// <summary>
-    /// Get RSVP count for an event (optionally filtered by status).
-    /// </summary>
     public async Task<int> GetRsvpCountAsync(int eventId, string status = "going")
     {
         try
@@ -329,7 +286,6 @@ public class EventEngagementServices
         }
     }
 
-    // Helper: Increment attendee count (denormalized)
     private async Task IncrementAttendeeCountAsync(int eventId)
     {
         await _context.Events
@@ -338,7 +294,6 @@ public class EventEngagementServices
                 setters.SetProperty(e => e.AttendeeCount, e => e.AttendeeCount + 1));
     }
 
-    // Helper: Decrement attendee count (denormalized)
     private async Task DecrementAttendeeCountAsync(int eventId)
     {
         await _context.Events
@@ -349,26 +304,14 @@ public class EventEngagementServices
 
     #endregion
 
-    #region 🔹 Social Context (Mocked — No Friendship Data Yet)
+    #region Social Context
 
-    /// <summary>
-    /// Get social context for an event (friends going, network interest).
-    /// NOTE: Currently mocked since friendship data not yet implemented.
-    /// </summary>
     public async Task<SocialContextDto> GetSocialContextAsync(int eventId, int userId)
     {
         try
         {
-            // 🔹 MOCKED: Since no friendship/connection model exists yet
-            // In production, this would query:
-            // 1. User's friends/connections who RSVP'd "going"
-            // 2. Network interest based on friend activity + event popularity
-            // 3. Real-time viewers (if using WebSockets/Redis)
-
-            // For now, return sensible defaults:
             var rsvpCount = await GetRsvpCountAsync(eventId, "going");
 
-            // Mock network interest based on total RSVPs (simple heuristic)
             string networkInterest = rsvpCount switch
             {
                 >= 100 => "high",
@@ -376,21 +319,19 @@ public class EventEngagementServices
                 _ => "low"
             };
 
-            // Mock live viewers (could be cached count from last 5 min)
             int? liveViewers = rsvpCount > 50 ? Random.Shared.Next(5, 25) : null;
 
             return new SocialContextDto
             {
-                FriendsGoing = 0, // 🔹 Mocked: Would be count of mutual friends RSVP'd
+                FriendsGoing = 0,
                 NetworkInterest = networkInterest,
                 LiveViewers = liveViewers,
-                MutualFriends = new List<UserSummaryDto>() // 🔹 Mocked: Would be list of friend profiles
+                MutualFriends = new List<UserSummaryDto>()
             };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "GetSocialContextAsync failed for user {UserId} on event {EventId}", userId, eventId);
-            // Return safe defaults on error
             return new SocialContextDto
             {
                 FriendsGoing = 0,
@@ -403,17 +344,12 @@ public class EventEngagementServices
 
     #endregion
 
-    #region 🔹 View Tracking
+    #region View Tracking
 
-    /// <summary>
-    /// Increment view count for an event (called when event detail page is loaded).
-    /// Uses ExecuteUpdate for performance (no entity tracking overhead).
-    /// </summary>
     public async Task IncrementViewCountAsync(int eventId)
     {
         try
         {
-            // Simple increment with concurrency safety (SQL Server handles atomic update)
             await _context.Events
                 .Where(e => e.Id == eventId && e.IsActive)
                 .ExecuteUpdateAsync(setters =>
@@ -421,7 +357,6 @@ public class EventEngagementServices
         }
         catch (Exception ex)
         {
-            // Log but don't throw — view tracking is non-critical
             _logger.LogError(ex, "IncrementViewCountAsync failed for event {EventId}", eventId);
         }
     }
