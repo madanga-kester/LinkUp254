@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <!-- REMOVED: <Compile Remove="Features\Groups\Models\GroupMessage.cs" /> -->
-    <Compile Remove="Features\Shared\SeedData.cs" />
+    
   </ItemGroup>
 
   <ItemGroup>

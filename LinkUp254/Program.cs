@@ -282,9 +282,8 @@ using (var scope = app.Services.CreateScope())
                 dbContext.Database.Migrate();
             }
         }
-
         var passwordHasher = services.GetRequiredService<IPasswordHasher<User>>();
-        await SeedData.InitializeAsync(dbContext, passwordHasher);
+        await LinkUp254.Features.Shared.SeedData.InitializeAsync(dbContext, passwordHasher);
     }
     catch (Exception ex)
     {

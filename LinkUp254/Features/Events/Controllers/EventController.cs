@@ -580,16 +580,26 @@ public class EventController : ControllerBase
             return NotFound(new { message = "Event not found" });
 
 
-       
-        var webRoot = Path.Combine(AppContext.BaseDirectory, "wwwroot");
+
+        //var webRoot = Path.Combine(AppContext.BaseDirectory, "wwwroot");
+        //var uploadsFolder = Path.Combine(webRoot, "uploads", "events");
+        //Directory.CreateDirectory(uploadsFolder);
+
+        //var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        //var uniqueFileName = $"event_{id}_{Guid.NewGuid():N}{extension}";
+        //var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+
+
+
+        // Use same wwwroot path as Program.cs to ensure static files can serve uploads
+        var webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
         var uploadsFolder = Path.Combine(webRoot, "uploads", "events");
         Directory.CreateDirectory(uploadsFolder);
 
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
         var uniqueFileName = $"event_{id}_{Guid.NewGuid():N}{extension}";
         var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-
 
 
 
