@@ -2,18 +2,18 @@
 using LinkUp254.Features.Auth;
 using LinkUp254.Features.Auth.DTOs;
 using LinkUp254.Features.Events.DTOs;
+using LinkUp254.Features.Events.EventDtos;
 using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Events.Services;
 using LinkUp254.Features.Shared;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using System.Security.Claims;
-using System.Reflection;
 using Microsoft.Extensions.Logging; 
-
-using Microsoft.AspNetCore.Hosting;
+using System.Reflection;
+using System.Security.Claims;
 
 namespace LinkUp254.Features.Events.Controllers;
 
@@ -604,5 +604,34 @@ public class EventController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(new { imageUrl = imageUrl, message = "Image uploaded successfully" });
+    }
+
+
+
+
+
+
+    
+    [HttpPost("attendee-avatars")]
+    [AllowAnonymous] 
+    public async Task<IActionResult> GetAttendeeAvatars([FromBody] AttendeeAvatarsRequest request)
+    {
+        if (!ModelState.IsValid || !request.EventIds.Any())
+            return BadRequest(new { message = "EventIds list is required" });
+
+        
+        if (request.EventIds.Count > 50)
+            return BadRequest(new { message = "Maximum 50 event IDs per request" });
+
+        try
+        {
+            var result = await _engagementServices.GetAttendeeAvatarsAsync(request.EventIds);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetAttendeeAvatars endpoint failed");
+            return StatusCode(500, new { message = "Failed to fetch attendee avatars" });
+        }
     }
 }

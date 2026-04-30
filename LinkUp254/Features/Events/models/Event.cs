@@ -77,6 +77,11 @@ public class Event : BaseEntity
     public bool IsPublished { get; set; } = false;
 
     public int AttendeeCount { get; set; } = 0;
+
+
+    [NotMapped]
+    public List<string>? AttendeeAvatars { get; set; }
+
     public int ViewCount { get; set; } = 0;
     public int LikeCount { get; set; } = 0;
 

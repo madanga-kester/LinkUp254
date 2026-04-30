@@ -1,5 +1,6 @@
 ﻿using LinkUp254.Database;
 using LinkUp254.Features.Events.DTOs;
+using LinkUp254.Features.Events.EventDtos;
 using LinkUp254.Features.Events.Models;
 using LinkUp254.Features.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -362,4 +363,70 @@ public class EventEngagementServices
     }
 
     #endregion
+
+
+
+
+
+
+ 
+    public async Task<AttendeeAvatarsResponse> GetAttendeeAvatarsAsync(List<int> eventIds)
+    {
+        try
+        {
+            if (!eventIds.Any())
+                return new AttendeeAvatarsResponse();
+
+            // Fetch RSVPs for these events + join with Users to get avatars
+            var avatarData = await _context.EventRsvps
+                .AsNoTracking()
+                .Where(r => eventIds.Contains(r.EventId)
+                         && r.Status == "going"
+                         && !string.IsNullOrEmpty(r.User.ProfilePicture))
+                .Select(r => new
+                {
+                    r.EventId,
+                    AvatarUrl = r.User.ProfilePicture!
+                })
+                .ToListAsync();
+
+            // Group by EventId, limit to 4 unique avatars per event
+            var result = new AttendeeAvatarsResponse();
+
+            foreach (var eventId in eventIds)
+            {
+                var avatars = avatarData
+                    .Where(a => a.EventId == eventId)
+                    .Select(a => a.AvatarUrl)
+                    .Distinct()
+                    .Take(4)
+                    .ToList();
+
+                if (avatars.Any())
+                {
+                    result.Avatars[eventId] = avatars;
+                }
+            }
+
+            
+            var counts = await _context.EventRsvps
+                .AsNoTracking()
+                .Where(r => eventIds.Contains(r.EventId) && r.Status == "going")
+                .GroupBy(r => r.EventId)
+                .Select(g => new { EventId = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            foreach (var c in counts)
+            {
+                result.AttendeeCounts[c.EventId] = c.Count;
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetAttendeeAvatarsAsync failed for events {EventIds}", string.Join(",", eventIds));
+            return new AttendeeAvatarsResponse(); 
+        }
+    }
 }

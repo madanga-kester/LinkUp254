@@ -1,4 +1,4 @@
-﻿// src/Features/Events/Models/EventRsvp.cs
+﻿
 using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Shared;
 using System;
