@@ -74,7 +74,7 @@ public class Event : BaseEntity
     public User Organizer { get; set; } = null!;
 
     public new bool IsActive { get; set; } = true;
-    public bool IsPublished { get; set; } = false;
+    public bool IsPublished { get; set; } = true;
 
     public int AttendeeCount { get; set; } = 0;
 

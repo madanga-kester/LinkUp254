@@ -1,4 +1,4 @@
-using LinkUp254.Database;
+﻿using LinkUp254.Database;
 using LinkUp254.Features.Auth;
 using LinkUp254.Features.Events.DTOs;
 using LinkUp254.Features.Events.models;
@@ -27,6 +27,17 @@ public class EventServices
         _logger = logger;
     }
 
+
+
+
+
+
+
+
+
+
+
+
     private IQueryable<Event> ApplyVisibilityFilter(IQueryable<Event> query, int? userId)
     {
         var publicEvents = query.Where(e => e.Visibility == 0);
@@ -52,22 +63,25 @@ public class EventServices
     }
 
     public async Task<PagedResult<Event>> GetNearbyEventsAsync(
-    double userLatitude,
-    double userLongitude,
-    double radiusKm,
-    EventFilterDto filters,
-    int? userId = null)
+        double userLatitude,
+        double userLongitude,
+        double radiusKm,
+        EventFilterDto filters,
+        int? userId = null)
     {
         try
         {
             var query = _context.Events
-                .Where(e => e.IsActive
-                         && e.IsPublished
-                         && e.Latitude.HasValue
+                .Where(e => e.Latitude.HasValue
                          && e.Longitude.HasValue
                          && e.StartTime >= DateTime.UtcNow.Date)
                 .AsNoTracking()
                 .AsQueryable();
+
+            if (filters.IsPublished ?? true)
+                query = query.Where(e => e.IsPublished);
+            if (filters.IsActive ?? true)
+                query = query.Where(e => e.IsActive);
 
             query = ApplyVisibilityFilter(query, userId);
 
@@ -146,17 +160,29 @@ public class EventServices
     {
         try
         {
-            var query = _context.Events
-                .Where(e => e.IsActive && e.IsPublished)
+            var baseQuery = _context.Events
                 .AsNoTracking()
                 .AsQueryable();
 
-            query = ApplyVisibilityFilter(query, userId);
+            // Apply IsPublished/IsActive filters - default to true if not specified
+            if (filters.IsPublished.HasValue)
+                baseQuery = baseQuery.Where(e => e.IsPublished == filters.IsPublished.Value);
+            else
+                baseQuery = baseQuery.Where(e => e.IsPublished);
 
+            if (filters.IsActive.HasValue)
+                baseQuery = baseQuery.Where(e => e.IsActive == filters.IsActive.Value);
+            else
+                baseQuery = baseQuery.Where(e => e.IsActive);
+
+            // Apply visibility filter (your exact logic - unchanged)
+            baseQuery = ApplyVisibilityFilter(baseQuery, userId);
+
+            // Apply other filters
             if (!string.IsNullOrEmpty(filters.Search))
             {
                 var searchTerm = $"%{filters.Search}%";
-                query = query.Where(e =>
+                baseQuery = baseQuery.Where(e =>
                     EF.Functions.Like(e.Title, searchTerm) ||
                     EF.Functions.Like(e.Description, searchTerm) ||
                     EF.Functions.Like(e.Location, searchTerm) ||
@@ -168,40 +194,33 @@ public class EventServices
             }
 
             if (!string.IsNullOrEmpty(filters.City))
-                query = query.Where(e => EF.Functions.Like(e.City, $"%{filters.City}%"));
+                baseQuery = baseQuery.Where(e => EF.Functions.Like(e.City, $"%{filters.City}%"));
             if (!string.IsNullOrEmpty(filters.Country))
-                query = query.Where(e => EF.Functions.Like(e.Country, $"%{filters.Country}%"));
+                baseQuery = baseQuery.Where(e => EF.Functions.Like(e.Country, $"%{filters.Country}%"));
             if (!string.IsNullOrEmpty(filters.Location))
-                query = query.Where(e => EF.Functions.Like(e.Location, $"%{filters.Location}%"));
+                baseQuery = baseQuery.Where(e => EF.Functions.Like(e.Location, $"%{filters.Location}%"));
 
             if (filters.StartDate.HasValue)
-                query = query.Where(e => e.StartTime >= filters.StartDate.Value);
+                baseQuery = baseQuery.Where(e => e.StartTime >= filters.StartDate.Value);
             if (filters.EndDate.HasValue)
-                query = query.Where(e => e.StartTime <= filters.EndDate.Value);
+                baseQuery = baseQuery.Where(e => e.StartTime <= filters.EndDate.Value);
 
             if (filters.IsFreeOnly == true)
-                query = query.Where(e => e.IsFree);
+                baseQuery = baseQuery.Where(e => e.IsFree);
             if (filters.MinPrice.HasValue)
-                query = query.Where(e => e.Price >= filters.MinPrice);
+                baseQuery = baseQuery.Where(e => e.Price >= filters.MinPrice);
             if (filters.MaxPrice.HasValue)
-                query = query.Where(e => e.Price <= filters.MaxPrice);
+                baseQuery = baseQuery.Where(e => e.Price <= filters.MaxPrice);
             if (filters.MinAge.HasValue)
-                query = query.Where(e => !e.AgeRestricted || e.MinAge <= filters.MinAge.Value);
+                baseQuery = baseQuery.Where(e => !e.AgeRestricted || e.MinAge <= filters.MinAge.Value);
 
-
-
-
-
-
-
-            //  NEW: Event type filters (virtual/in-person)
+            // Event type filters (virtual/in-person)
             if (filters.IsVirtual == true)
-                query = query.Where(e => e.IsVirtual); // Assumes Event model has IsVirtual property
-
+                baseQuery = baseQuery.Where(e => e.IsVirtual);
             if (filters.IsInPerson == true)
-                query = query.Where(e => !e.IsVirtual); // Or add IsInPerson property to Event model
+                baseQuery = baseQuery.Where(e => !e.IsVirtual);
 
-            //  NEW: Interest IDs filter (parse comma-separated string)
+            // Interest IDs filter 
             if (!string.IsNullOrEmpty(filters.InterestIds))
             {
                 var interestIdList = filters.InterestIds
@@ -209,36 +228,50 @@ public class EventServices
                     .Select(int.Parse)
                     .ToList();
 
-                query = query.Where(e => e.EventInterests
+                baseQuery = baseQuery.Where(e => e.EventInterests
                     .Any(ei => interestIdList.Contains(ei.InterestId)));
             }
 
-
-
-
-            query = filters.SortBy switch
+            // Apply sorting
+            var sortedQuery = filters.SortBy switch
             {
-                "date_asc" => query.OrderBy(e => e.StartTime),
-                "date_desc" => query.OrderByDescending(e => e.StartTime),
-                "popularity" => query.OrderByDescending(e => e.AttendeeCount),
-                "price_asc" => query.OrderBy(e => e.Price).ThenBy(e => e.StartTime),
-                "price_desc" => query.OrderByDescending(e => e.Price).ThenBy(e => e.StartTime),
-                _ => query.OrderByDescending(e => e.StartTime)
+                "date_asc" => baseQuery.OrderBy(e => e.StartTime),
+                "date_desc" => baseQuery.OrderByDescending(e => e.StartTime),
+                "popularity" => baseQuery.OrderByDescending(e => e.AttendeeCount),
+                "price_asc" => baseQuery.OrderBy(e => e.Price).ThenBy(e => e.StartTime),
+                "price_desc" => baseQuery.OrderByDescending(e => e.Price).ThenBy(e => e.StartTime),
+                _ => baseQuery.OrderByDescending(e => e.StartTime)
             };
 
-            var total = await query.CountAsync();
-            var events = await query
+            
+            var total = await sortedQuery.CountAsync();
+
+           
+            var eventIds = await sortedQuery
+                .Select(e => e.Id)
                 .Skip(filters.Offset)
                 .Take(filters.Limit)
-                .Include(e => e.EventInterests)
-                    .ThenInclude(ei => ei.Interest)
-                .Include(e => e.Organizer)
-                .AsSplitQuery()
                 .ToListAsync();
+
+            if (!eventIds.Any())
+                return new PagedResult<Event> { Items = new List<Event>(), Total = 0, Limit = filters.Limit, Offset = filters.Offset };
+
+           
+            var events = await _context.Events
+                .AsNoTracking()
+                .Include(e => e.EventInterests).ThenInclude(ei => ei.Interest)
+                .Include(e => e.Organizer)
+                .Where(e => eventIds.Contains(e.Id))
+                .ToListAsync();
+
+            
+            var orderedEvents = eventIds
+                .Join(events, id => id, e => e.Id, (id, e) => e)
+                .ToList();
 
             return new PagedResult<Event>
             {
-                Items = events,
+                Items = orderedEvents,
                 Total = total,
                 Limit = filters.Limit,
                 Offset = filters.Offset
@@ -250,6 +283,18 @@ public class EventServices
             return new PagedResult<Event> { Items = new List<Event>(), Total = 0 };
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
 
     public async Task<PagedResult<Event>> GetPersonalizedEventsAsync(string userId, EventFilterDto filters)
     {
@@ -270,9 +315,18 @@ public class EventServices
                 .Select(gm => gm.GroupId)
                 .ToListAsync();
 
+            //var baseQuery = _context.Events
+            //    .AsNoTracking()
+            //    .Where(e => e.IsActive && e.IsPublished && e.StartTime >= DateTime.UtcNow.Date);
             var baseQuery = _context.Events
-                .AsNoTracking()
-                .Where(e => e.IsActive && e.IsPublished && e.StartTime >= DateTime.UtcNow.Date);
+    .AsNoTracking()
+    .Where(e => e.StartTime >= DateTime.UtcNow.Date);
+
+            if (filters.IsPublished ?? true)
+                baseQuery = baseQuery.Where(e => e.IsPublished);
+            if (filters.IsActive ?? true)
+                baseQuery = baseQuery.Where(e => e.IsActive);
+
 
             var visibleQuery = baseQuery.Where(e =>
                 e.Visibility == 0 ||
@@ -371,10 +425,23 @@ public class EventServices
     {
         try
         {
+            //var query = _context.Events
+            //    .Where(e => e.IsActive && e.IsPublished && e.StartTime >= DateTime.UtcNow.Date)
+            //    .AsNoTracking()
+            //    .AsQueryable();
+
+
             var query = _context.Events
-                .Where(e => e.IsActive && e.IsPublished && e.StartTime >= DateTime.UtcNow.Date)
-                .AsNoTracking()
-                .AsQueryable();
+    .Where(e => e.StartTime >= DateTime.UtcNow.Date)
+    .AsNoTracking()
+    .AsQueryable();
+
+            if (filters.IsPublished ?? true)
+                query = query.Where(e => e.IsPublished);
+            if (filters.IsActive ?? true)
+                query = query.Where(e => e.IsActive);
+
+
 
             query = ApplyVisibilityFilter(query, userId);
 

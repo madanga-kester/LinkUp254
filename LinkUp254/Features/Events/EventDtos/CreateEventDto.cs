@@ -59,7 +59,7 @@ public class CreateEventDto
 
     public int? MaxAttendees { get; set; }
 
-    public bool? IsPublished { get; set; } = false;
+    public bool? IsPublished { get; set; } = true;
 
     public List<int>? InterestIds { get; set; }
 
