@@ -1,4 +1,4 @@
-﻿using LinkUp254.Database;
+using LinkUp254.Database;
 using LinkUp254.Features.Auth;
 using LinkUp254.Features.Events.DTOs;
 using LinkUp254.Features.Events.models;
@@ -192,7 +192,7 @@ public class EventServices
 
 
 
-       
+
 
             //  NEW: Event type filters (virtual/in-person)
             if (filters.IsVirtual == true)
@@ -834,4 +834,3 @@ public class EventServices
         }
     }
 }
-    

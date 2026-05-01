@@ -1,4 +1,4 @@
-﻿using LinkUp254.Database;
+using LinkUp254.Database;
 using LinkUp254.Features.Auth;
 using LinkUp254.Features.Events.Models;
 using LinkUp254.Features.Events.Services;
@@ -20,7 +20,7 @@ namespace LinkUp254.Features.Events.Controllers;
 [Route("api/[controller]")]
 public class TicketsController : ControllerBase
 {
-   
+
 
 
     private readonly TicketServices _ticketServices;
@@ -382,6 +382,5 @@ public class TicketsController : ControllerBase
 
 
 }
-
 
 

@@ -1,4 +1,4 @@
-﻿
+
 
 
 
@@ -62,9 +62,9 @@ public class GroupServices
             .Include(g => g.GroupMembers)
                 .ThenInclude(gm => gm.User)
             .Include(g => g.GroupEvents)
-                .ThenInclude(ge => ge.Event!)      
+                .ThenInclude(ge => ge.Event!)
             .Include(g => g.Settings)
-            .AsSplitQuery()                        
+            .AsSplitQuery()
             .FirstOrDefaultAsync(g => g.Id == id && g.IsActive);
 
         if (group == null)
@@ -79,7 +79,7 @@ public class GroupServices
         var withEventData = group.GroupEvents?.Count(ge => ge.Event != null) ?? 0;
         Console.WriteLine($" Group {id}: Loaded {loadedCount} GroupEvents, {withEventData} have Event data loaded");
 
-        
+
         if (currentUserId == null)
         {
             group.GroupEvents = group.GroupEvents?
@@ -93,14 +93,14 @@ public class GroupServices
         var isOrganizer = group.OrganizerId == currentUserId;
 
 
-        
+
 
         // Filter events according to visibility rules (with safe null handling)
         group.GroupEvents = group.GroupEvents?
             .Where(ge =>
             {
-                
-                if (ge.Event == null || !ge.Event.IsActive)  
+
+                if (ge.Event == null || !ge.Event.IsActive)
                 {
                     return false;
                 }
@@ -116,7 +116,7 @@ public class GroupServices
 
         return group;
 
-        
+
     }
 
 
@@ -133,7 +133,7 @@ public class GroupServices
 
     public async Task<GroupModel> CreateGroupAsync(CreateGroupDto dto, int organizerId)
     {
-        
+
         var group = new GroupModel
         {
             Name = dto.Name.Trim(),
@@ -143,7 +143,7 @@ public class GroupServices
             City = dto.City?.Trim(),
             Country = dto.Country?.Trim(),
             Location = dto.Location?.Trim(),
-            IsPrivate = dto.IsPrivate,                    
+            IsPrivate = dto.IsPrivate,
             MemberCount = 1,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -152,7 +152,7 @@ public class GroupServices
         _context.Groups.Add(group);
         await _context.SaveChangesAsync();
 
-        
+
         var member = new GroupMemberModel
         {
             GroupId = group.Id,
@@ -163,7 +163,7 @@ public class GroupServices
         };
         _context.GroupMembers.Add(member);
 
-        
+
         var settings = new GroupSettings
         {
             GroupId = group.Id,
@@ -179,7 +179,7 @@ public class GroupServices
         };
         _context.GroupSettings.Add(settings);
 
-        
+
         if (dto.Rules?.Any() == true)
         {
             foreach (var ruleDto in dto.Rules)
@@ -356,7 +356,7 @@ public class GroupServices
         {
             if (request.Status == "pending") return "pending";
             if (request.Status == "rejected") return "rejected";
-            if (request.Status == "approved") return "member"; 
+            if (request.Status == "approved") return "member";
         }
 
         return "none"; // No request found
@@ -509,11 +509,11 @@ public class GroupServices
         if (dto.NotifyOnNewEvent.HasValue) settings.NotifyOnNewEvent = dto.NotifyOnNewEvent.Value;
         if (dto.NotifyOnNewMember.HasValue) settings.NotifyOnNewMember = dto.NotifyOnNewMember.Value;
 
-      
+
         if (group.IsPrivate != dto.IsPrivate)
         {
             group.IsPrivate = (bool)dto.IsPrivate;
-            group.UpdatedAt = DateTime.UtcNow; 
+            group.UpdatedAt = DateTime.UtcNow;
         }
 
         settings.UpdatedAt = DateTime.UtcNow;
@@ -550,7 +550,7 @@ public class GroupServices
         return AuthResult.Success("Rule added.");
     }
 
-    
+
 
 
 
@@ -592,7 +592,7 @@ public class GroupServices
             IsLocked = false,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
-            SourceMessageId = dto.SourceMessageId 
+            SourceMessageId = dto.SourceMessageId
         };
 
         _context.GroupDiscussions.Add(discussion);
@@ -601,7 +601,7 @@ public class GroupServices
         return AuthResult.Success("Discussion created.");
     }
 
-    
+
     public async Task<List<DiscussionItemDto>> GetDiscussionsAsync(int groupId)
     {
         var discussions = await _context.GroupDiscussions
@@ -633,7 +633,7 @@ public class GroupServices
         }).ToList();
     }
 
-    
+
 
 
 
@@ -645,7 +645,7 @@ public class GroupServices
             .FirstOrDefaultAsync(d => d.Id == discussionId && d.IsActive);
 
         if (discussion == null) return null;
-        if (discussion.Group == null) return null; 
+        if (discussion.Group == null) return null;
 
         if (discussion.Group.IsPrivate)
         {
@@ -666,7 +666,7 @@ public class GroupServices
 
         var discussionReaction = await GetReactionDataAsync("Discussion", discussionId, userId);
 
-        
+
 
         var replyDtos = new List<ReplyDto>();
         foreach (var r in replies)
@@ -711,7 +711,7 @@ public class GroupServices
             UpvoteCount = discussionReaction.Count,
             UserReaction = discussionReaction.UserReaction,
             CreatedAt = discussion.CreatedAt,
-            Replies = replyDtos 
+            Replies = replyDtos
         };
     }
 
@@ -724,11 +724,11 @@ public class GroupServices
     {
         try
         {
-           
+
             if (targetType != "Discussion" && targetType != "Reply")
                 return AuthResult.Failure($"Invalid target type: {targetType}");
 
-            
+
             if (targetType == "Reply")
             {
                 var reply = await _context.GroupDiscussionReplies
@@ -737,9 +737,9 @@ public class GroupServices
                 if (reply == null)
                     return AuthResult.Failure("Reply not found or inactive.");
 
-                
+
             }
-            
+
             else if (targetType == "Discussion")
             {
                 var discussion = await _context.GroupDiscussions
@@ -749,7 +749,7 @@ public class GroupServices
                     return AuthResult.Failure("Discussion not found or inactive.");
             }
 
-            
+
             var existing = await _context.GroupDiscussionReactions
                 .FirstOrDefaultAsync(r =>
                     r.TargetType == targetType &&
@@ -781,7 +781,7 @@ public class GroupServices
         }
         catch (Exception ex)
         {
-            
+
             System.Diagnostics.Debug.WriteLine($"[ERROR] ToggleReactionAsync crashed: {ex.Message}\n{ex.StackTrace}");
             return AuthResult.Failure($"Server error: {ex.Message}");
         }
@@ -807,7 +807,7 @@ public class GroupServices
         }
         catch
         {
-           
+
             return (0, null);
         }
     }
@@ -927,21 +927,21 @@ public class GroupServices
             .FirstOrDefaultAsync(g => g.Id == groupId);
 
         if (group == null || group.OrganizerId != organizerId)
-            return new List<PendingRequestDto>(); 
+            return new List<PendingRequestDto>();
 
 
         // Fetch ONLY pending requests for this group
         var pendingRequests = await _context.GroupJoinRequests
             .Where(r => r.GroupId == groupId && r.Status == "pending")
-            .Include(r => r.User) 
+            .Include(r => r.User)
             .OrderByDescending(r => r.RequestedAt)
             .ToListAsync();
 
-        
+
         return pendingRequests.Select(r => new PendingRequestDto
         {
             Id = r.Id,
-            User = new UserDto 
+            User = new UserDto
             {
                 Id = r.User.Id,
                 FirstName = r.User.FirstName,
@@ -1214,23 +1214,23 @@ public class GroupServices
         if (group == null)
             return (false, "Group not found", null);
 
-        
+
         if (group.OrganizerId != organizerId)
             return (false, "Only the organizer can update group details", null);
 
 
 
-        
+
         if (!string.IsNullOrEmpty(dto.Name)) group.Name = dto.Name;
         if (dto.Description != null) group.Description = dto.Description;
         if (dto.City != null) group.City = dto.City;
         if (dto.Country != null) group.Country = dto.Country;
         if (dto.Location != null) group.Location = dto.Location;
-        if (dto.IsPrivate !=null) group.IsPrivate = dto.IsPrivate.Value;
+        if (dto.IsPrivate != null) group.IsPrivate = dto.IsPrivate.Value;
 
         group.UpdatedAt = DateTime.UtcNow;
 
-        
+
         if (group.Settings != null)
         {
             if (dto.AllowMemberInvites.HasValue) group.Settings.AllowMemberInvites = dto.AllowMemberInvites.Value;
@@ -1241,17 +1241,17 @@ public class GroupServices
 
 
 
-      
+
         await _context.SaveChangesAsync();
 
-       
+
         var updatedGroup = await _context.Groups
             .Include(g => g.Organizer)
             .Include(g => g.Settings)
             .Include(g => g.GroupRules)
             .FirstOrDefaultAsync(g => g.Id == groupId);
 
-        return (true, null, updatedGroup!); 
+        return (true, null, updatedGroup!);
     }
 
 
@@ -1407,7 +1407,6 @@ public class DiscussionDetailDto
     public DateTime CreatedAt { get; set; }
     public List<ReplyDto> Replies { get; set; } = new List<ReplyDto>();
 }
-
 
 
 

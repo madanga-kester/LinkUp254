@@ -1,4 +1,4 @@
-﻿using LinkUp254.Database;
+using LinkUp254.Database;
 using LinkUp254.Features.Auth;
 using LinkUp254.Features.Events.models;
 using LinkUp254.Features.Events.Models;
@@ -168,7 +168,7 @@ public class TicketServices
         {
             if (!string.IsNullOrEmpty(idempotencyKey))
             {
-                
+
 
                 var existing = await _context.Tickets
     .AsNoTracking()
@@ -585,7 +585,6 @@ public class TicketServices
         return Task.CompletedTask;
     }
 }
-
 
 
 

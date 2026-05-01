@@ -25,7 +25,8 @@ namespace LinkUp254.Features.Auth.DTOs
         [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$", ErrorMessage = "Password must contain uppercase, lowercase, number and special character")]
         public required string Password { get; set; }
 
-
+        public DateTime? DateOfBirth { get; set; }
+        public int Age { get; set; }
 
         [Required]
         [RegularExpression("^(Email|Phone)$", ErrorMessage = "Must be 'Email' or 'Phone'")]

@@ -61,6 +61,13 @@ public class AuthServices
                 CreatedAt = DateTime.UtcNow
             };
 
+
+
+
+
+
+
+
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
@@ -98,17 +105,33 @@ public class AuthServices
             }
 
             var hashedPassword = _passwordHasher.HashPassword(null!, dto.Password);
+            //var user = new User
+            //{
+            //    Email = dto.Email,
+            //    FirstName = dto.FirstName,
+            //    LastName = dto.LastName,
+            //    PhoneNumber = dto.Phone,
+            //    Password = hashedPassword,
+            //    Role = "User",
+            //    IsActive = false,
+            //    CreatedAt = DateTime.UtcNow
+            //};
+
+
             var user = new User
             {
                 Email = dto.Email,
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
                 PhoneNumber = dto.Phone,
+                DateOfBirth = (DateTime)dto.DateOfBirth,
+                Age = dto.Age,
                 Password = hashedPassword,
                 Role = "User",
                 IsActive = false,
                 CreatedAt = DateTime.UtcNow
             };
+
 
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();

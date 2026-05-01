@@ -18,7 +18,8 @@ namespace LinkUp254.Features.Shared
         public string? ProfilePicture { get; set; }
 
 
-
+    
+      
 
         public int? Age { get; set; }
         public string? City { get; set; }
