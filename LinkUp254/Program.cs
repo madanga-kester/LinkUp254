@@ -160,7 +160,8 @@ builder.Services.AddAuthentication(options =>
 
 
 
-
+builder.Services.AddScoped<LinkUp254.Features.Shared.Newsletter.Services.Interfaces.INewsletterService,
+                         LinkUp254.Features.Shared.Newsletter.Services.NewsletterService>();
 
 
 

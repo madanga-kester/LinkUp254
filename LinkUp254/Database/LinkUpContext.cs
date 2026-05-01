@@ -1,13 +1,14 @@
 ﻿using LinkUp254.Features.Events.models;
-using LinkUp254.Features.Groups.Models;
+using LinkUp254.Features.Events.Models;
 using LinkUp254.Features.GroupCoverImage.Models;
+using LinkUp254.Features.Groups.Models;
 using LinkUp254.Features.Shared;
+using LinkUp254.Features.Shared.Newsletter.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using LinkUp254.Features.Events.Models;
 
 namespace LinkUp254.Database
 {
@@ -27,9 +28,10 @@ namespace LinkUp254.Database
       
         public DbSet<EventLike> EventLikes { get; set; } = null!;
         public DbSet<EventRsvp> EventRsvps { get; set; } = null!;
-       
 
-       
+
+     
+        public DbSet<NewsletterSubscription> NewsletterSubscriptions { get; set; }
 
 
 
@@ -500,6 +502,25 @@ namespace LinkUp254.Database
                      .OnDelete(DeleteBehavior.NoAction);  
             });
 
+
+
+
+
+
+            //// NEWSLETTER SUBSCRIPTION configuration
+            modelBuilder.Entity<NewsletterSubscription>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                // Unique index on Email only (UserId can be null for anonymous users)
+                entity.HasIndex(s => s.Email).IsUnique();
+
+                // Nullable foreign key relationship with SetNull behavior
+                entity.HasOne<User>()
+                      .WithMany()
+                      .HasForeignKey(s => s.UserId)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
 
 
 
