@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using LinkUp254.Features.Organizers.DTOs;
 using LinkUp254.Features.Organizers.Services;
 
@@ -13,10 +14,12 @@ namespace LinkUp254.Features.Organizers.Controllers;
 public class OrganizersController : ControllerBase
 {
     private readonly IOrganizerService _organizerService;
+    private readonly ILogger<OrganizersController> _logger;
 
-    public OrganizersController(IOrganizerService organizerService)
+    public OrganizersController(IOrganizerService organizerService, ILogger<OrganizersController> logger)
     {
         _organizerService = organizerService;
+        _logger = logger;
     }
 
     [HttpGet("{id}")]
@@ -37,18 +40,61 @@ public class OrganizersController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Follow([FromBody] FollowOrganizerDto dto)
     {
-        var userId = GetUserId();
-        var success = await _organizerService.FollowOrganizerAsync(userId, dto.OrganizerId);
-        return success ? Ok(new { message = "Followed successfully." }) : BadRequest(new { message = "Already following." });
+        try
+        {
+            var userId = GetUserId();
+            if (userId <= 0) return Unauthorized(new { message = "Invalid user session." });
+
+            var success = await _organizerService.FollowOrganizerAsync(userId, dto.OrganizerId);
+
+            if (success)
+            {
+                return Ok(new { message = "Followed successfully." });
+            }
+            else
+            {
+                
+                return Ok(new { message = "Already following.", isAlreadyFollowing = true });
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Follow failed: {Message}", ex.Message);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Follow endpoint error");
+            return StatusCode(500, new { message = "An unexpected error occurred." });
+        }
     }
 
     [HttpPost("unfollow")]
     [Authorize]
     public async Task<IActionResult> Unfollow([FromBody] FollowOrganizerDto dto)
     {
-        var userId = GetUserId();
-        var success = await _organizerService.UnfollowOrganizerAsync(userId, dto.OrganizerId);
-        return success ? Ok(new { message = "Unfollowed successfully." }) : NotFound(new { message = "Not following this organizer." });
+        try
+        {
+            var userId = GetUserId();
+            if (userId <= 0) return Unauthorized(new { message = "Invalid user session." });
+
+            var success = await _organizerService.UnfollowOrganizerAsync(userId, dto.OrganizerId);
+
+            if (success)
+            {
+                return Ok(new { message = "Unfollowed successfully." });
+            }
+            else
+            {
+                
+                return Ok(new { message = "Not following this organizer.", isNotFollowing = true });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unfollow endpoint error");
+            return StatusCode(500, new { message = "An unexpected error occurred." });
+        }
     }
 
     [HttpPost("rate")]
@@ -57,9 +103,19 @@ public class OrganizersController : ControllerBase
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        var userId = GetUserId();
-        var success = await _organizerService.RateOrganizerAsync(userId, dto.OrganizerId, dto.Rating, dto.Comment);
-        return success ? Ok(new { message = "Rating saved successfully." }) : StatusCode(500, new { message = "Failed to save rating." });
+        try
+        {
+            var userId = GetUserId();
+            if (userId <= 0) return Unauthorized(new { message = "Invalid user session." });
+
+            var success = await _organizerService.RateOrganizerAsync(userId, dto.OrganizerId, dto.Rating, dto.Comment);
+            return success ? Ok(new { message = "Rating saved successfully." }) : StatusCode(500, new { message = "Failed to save rating." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Rate endpoint error");
+            return StatusCode(500, new { message = "An unexpected error occurred." });
+        }
     }
 
     [HttpPost("contact")]
@@ -68,9 +124,19 @@ public class OrganizersController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(dto.Message)) return BadRequest(new { message = "Message cannot be empty." });
 
-        var userId = GetUserId();
-        var success = await _organizerService.ContactOrganizerAsync(userId, dto.OrganizerId, dto.Message);
-        return success ? Ok(new { message = "Message sent successfully." }) : StatusCode(500, new { message = "Failed to send message." });
+        try
+        {
+            var userId = GetUserId();
+            if (userId <= 0) return Unauthorized(new { message = "Invalid user session." });
+
+            var success = await _organizerService.ContactOrganizerAsync(userId, dto.OrganizerId, dto.Message);
+            return success ? Ok(new { message = "Message sent successfully." }) : StatusCode(500, new { message = "Failed to send message." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Contact endpoint error");
+            return StatusCode(500, new { message = "An unexpected error occurred." });
+        }
     }
 
     private int GetUserId()
