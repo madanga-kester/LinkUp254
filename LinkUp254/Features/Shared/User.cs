@@ -12,15 +12,9 @@ namespace LinkUp254.Features.Shared
         public DateTime DateOfBirth { get; set; }
         public required string PhoneNumber { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
-
         public required string Email { get; set; } = string.Empty;
         public required string Password { get; set; } = string.Empty;
         public string? ProfilePicture { get; set; }
-
-
-    
-      
-
         public int? Age { get; set; }
         public string? City { get; set; }
         public string? Country { get; set; }
@@ -32,7 +26,6 @@ namespace LinkUp254.Features.Shared
 
         [StringLength(500)]
         public string? RefreshToken { get; set; }
-
         public DateTime? RefreshTokenExpiry { get; set; }
 
 

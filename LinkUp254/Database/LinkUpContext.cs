@@ -21,6 +21,9 @@ namespace LinkUp254.Database
         public DbSet<Event> Events { get; set; } = null!;
 
 
+        public DbSet<LinkUp254.Features.Organizers.Models.Follow> Follows { get; set; } = null!;
+        public DbSet<LinkUp254.Features.Organizers.Models.OrganizerRating> OrganizerRatings { get; set; } = null!;
+
         public DbSet<EventAttendee> EventAttendees { get; set; } = null!;
 
        
@@ -521,6 +524,25 @@ namespace LinkUp254.Database
                       .HasForeignKey(s => s.UserId)
                       .OnDelete(DeleteBehavior.SetNull);
             });
+
+
+
+            //Organizerr follow
+            modelBuilder.Entity<LinkUp254.Features.Organizers.Models.Follow>(entity =>
+            {
+                entity.HasKey(e => new { e.FollowerId, e.OrganizerId });
+                entity.HasOne(e => e.Follower).WithMany().HasForeignKey(e => e.FollowerId).OnDelete(DeleteBehavior.NoAction);
+                entity.HasOne(e => e.Organizer).WithMany().HasForeignKey(e => e.OrganizerId).OnDelete(DeleteBehavior.NoAction);
+            });
+
+            modelBuilder.Entity<LinkUp254.Features.Organizers.Models.OrganizerRating>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.NoAction);
+                entity.HasOne(e => e.Organizer).WithMany().HasForeignKey(e => e.OrganizerId).OnDelete(DeleteBehavior.NoAction);
+            });
+
+
 
 
 

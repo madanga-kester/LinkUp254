@@ -82,6 +82,11 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<AuthServices>();
 builder.Services.AddScoped<AdminAuthServices>();
 
+builder.Services.AddControllers();
+
+builder.Services.AddScoped<LinkUp254.Features.Auth.AuthServices>();
+builder.Services.AddScoped<LinkUp254.Features.Organizers.Services.IOrganizerService, LinkUp254.Features.Organizers.Services.OrganizerService>();
+
 
 builder.Services.AddScoped<TicketServices>();
 
