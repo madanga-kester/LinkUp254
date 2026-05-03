@@ -644,4 +644,20 @@ public class EventController : ControllerBase
             return StatusCode(500, new { message = "Failed to fetch attendee avatars" });
         }
     }
+
+
+
+
+
+    [HttpGet("related")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetRelatedEvents(
+    [FromQuery] int exclude,
+    [FromQuery] int? organizerId,
+    [FromQuery] string? interestIds,
+    [FromQuery] int limit = 4)
+    {
+        var events = await _eventServices.GetRelatedEventsAsync(exclude, organizerId, interestIds, limit);
+        return Ok(events);
+    }
 }

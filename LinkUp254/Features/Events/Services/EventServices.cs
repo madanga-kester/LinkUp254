@@ -900,4 +900,71 @@ public class EventServices
             return AuthResult.Failure("Failed to delete cover image.");
         }
     }
+
+
+
+
+
+
+
+    public async Task<List<object>> GetRelatedEventsAsync(int excludeEventId, int? organizerId, string? interestIds, int limit = 4)
+    {
+        try
+        {
+            var query = _context.Events
+                .AsNoTracking()
+                .Where(e => e.Id != excludeEventId
+                         && e.IsPublished
+                         && e.IsActive
+                         && e.StartTime > DateTime.UtcNow);
+
+            if (organizerId.HasValue)
+            {
+                query = query.Where(e => e.OrganizerId == organizerId.Value);
+            }
+            else if (!string.IsNullOrEmpty(interestIds))
+            {
+                var ids = interestIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(int.Parse)
+                    .ToArray();
+                query = query.Where(e => e.EventInterests
+                    .Any(ei => ids.Contains(ei.InterestId)));
+            }
+
+            var events = await query
+                .Include(e => e.EventInterests)
+                    .ThenInclude(ei => ei.Interest)
+                .Include(e => e.Organizer)
+                .OrderByDescending(e => e.CreatedAt)
+                .Take(limit)
+                .Select(e => new
+                {
+                    e.Id,
+                    e.Title,
+                    e.StartTime,
+                    e.City,
+                    e.Country,
+                    e.CoverImage,
+                    e.IsFree,
+                    e.Price,
+                    EventInterests = e.EventInterests.Select(ei => new
+                    {
+                        Interest = new
+                        {
+                            ei.Interest.Id,
+                            ei.Interest.Name,
+                            ei.Interest.Category
+                        }
+                    })
+                })
+                .ToListAsync();
+
+            return events.Cast<object>().ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetRelatedEventsAsync failed");
+            return new List<object>();
+        }
+    }
 }
