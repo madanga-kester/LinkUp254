@@ -29,15 +29,6 @@ public class EventServices
 
 
 
-
-
-
-
-
-
-
-
-
     private IQueryable<Event> ApplyVisibilityFilter(IQueryable<Event> query, int? userId)
     {
         var publicEvents = query.Where(e => e.Visibility == 0);
@@ -906,7 +897,6 @@ public class EventServices
 
 
 
-
     public async Task<List<object>> GetRelatedEventsAsync(int excludeEventId, int? organizerId, string? interestIds, int limit = 4)
     {
         try
@@ -941,6 +931,8 @@ public class EventServices
                 {
                     e.Id,
                     e.Title,
+                    e.Description,
+                    e.AttendeeCount,
                     e.StartTime,
                     e.City,
                     e.Country,

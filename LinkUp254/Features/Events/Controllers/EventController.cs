@@ -27,11 +27,6 @@ public class EventController : ControllerBase
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<EventController> _logger;
 
-    
-  
-
-
-
 
     public EventController(
     EventServices eventServices,
