@@ -56,7 +56,7 @@ public class GroupServices
 
     public async Task<GroupModel?> GetGroupByIdAsync(int id, int? currentUserId = null)
     {
-        // Fetch group with proper eager loading
+        // Fetch group
         var group = await _context.Groups
             .Include(g => g.Organizer)
             .Include(g => g.GroupMembers)
@@ -95,7 +95,7 @@ public class GroupServices
 
 
 
-        // Filter events according to visibility rules (with safe null handling)
+        // Filter events according to visibility rules 
         group.GroupEvents = group.GroupEvents?
             .Where(ge =>
             {
@@ -244,7 +244,7 @@ public class GroupServices
 
     public async Task<(bool IsSuccess, string Message, bool IsPending)> JoinGroupAsync(int groupId, int userId)
     {
-        // 1. Get group
+        
         var group = await _context.Groups
             .Include(g => g.Settings)
             .FirstOrDefaultAsync(g => g.Id == groupId && g.IsActive);
@@ -252,14 +252,13 @@ public class GroupServices
         if (group == null)
             return (false, "Group not found", false);
 
-        // 2. Check if  a user is already a member
         var isMember = await _context.GroupMembers
             .AnyAsync(gm => gm.GroupId == groupId && gm.UserId == userId && gm.IsActive);
 
         if (isMember)
             return (false, "You are already a member of this group", false);
 
-        // 3. Determine Privacy
+        
         bool isPrivate = group.IsPrivate || (group.Settings?.IsPrivate ?? false);
 
         if (!isPrivate)
@@ -303,7 +302,7 @@ public class GroupServices
                 {
                     return (true, "Request is already pending.", true);
                 }
-                // if Approved = Should be member, but just in case
+                // if Approved = Should be member
                 if (existingRequest.Status == "approved")
                 {
                     var member = new GroupMemberModel
@@ -1348,14 +1347,6 @@ public class DiscussionItemDto
 
 
 
-
-//public class UserDto
-//{
-//    public int Id { get; set; }
-//    public string FirstName { get; set; } = string.Empty;
-//    public string LastName { get; set; } = string.Empty;
-//    public string? ProfilePicture { get; set; }
-//}
 public class AddMemberDto
 {
     public int TargetUserId { get; set; }

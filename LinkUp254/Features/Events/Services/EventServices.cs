@@ -155,7 +155,7 @@ public class EventServices
                 .AsNoTracking()
                 .AsQueryable();
 
-            // Apply IsPublished/IsActive filters - default to true if not specified
+            
             if (filters.IsPublished.HasValue)
                 baseQuery = baseQuery.Where(e => e.IsPublished == filters.IsPublished.Value);
             else
@@ -166,10 +166,10 @@ public class EventServices
             else
                 baseQuery = baseQuery.Where(e => e.IsActive);
 
-            // Apply visibility filter (your exact logic - unchanged)
+           
             baseQuery = ApplyVisibilityFilter(baseQuery, userId);
 
-            // Apply other filters
+           
             if (!string.IsNullOrEmpty(filters.Search))
             {
                 var searchTerm = $"%{filters.Search}%";

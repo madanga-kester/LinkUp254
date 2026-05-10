@@ -16,7 +16,7 @@ public class GroupJoinRequest
     public User User { get; set; } = null!;
 
     [MaxLength(500)]
-    public string? Message { get; set; }  // Optional message from requester
+    public string? Message { get; set; }  
 
     public string Status { get; set; } = "pending";  // pending, approved, rejected
     public DateTime RequestedAt { get; set; } = DateTime.UtcNow;

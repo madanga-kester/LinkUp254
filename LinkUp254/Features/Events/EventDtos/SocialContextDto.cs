@@ -1,4 +1,4 @@
-﻿// src/Features/Events/EventDtos/SocialContextDto.cs
+﻿
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -21,8 +21,8 @@ public class UserSummaryDto
     public int Id { get; set; }
 
     [StringLength(100)]
-    public string? FirstName { get; set; } // ✅ Made nullable
+    public string? FirstName { get; set; }
 
     [StringLength(500)]
-    public string? ProfilePicture { get; set; } // ✅ Made nullable
+    public string? ProfilePicture { get; set; } 
 }

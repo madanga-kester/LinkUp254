@@ -13,7 +13,7 @@ public class CollectionItemDto
 {
     public int EventId { get; set; }
     public DateTime AddedAt { get; set; } = DateTime.UtcNow;
-    // Optional: include minimal event data for preview
+    
     public string? EventTitle { get; set; }
     public DateTime? EventStartTime { get; set; }
 }

@@ -326,11 +326,10 @@ public class TicketsController : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Unauthorized(new { message = "Authentication required" });
 
-        //  Simplified: Only return tickets where this user is the buyer
         var tickets = await _context.Tickets
             .Include(t => t.Event)
             .Include(t => t.TicketTier)
-            .Where(t => t.BuyerUserId == userId)  // Just check buyer, not attendee email
+            .Where(t => t.BuyerUserId == userId)  
             .OrderByDescending(t => t.PurchasedAt)
             .Select(t => new TicketDetailsDto
             {
@@ -367,8 +366,7 @@ public class TicketsController : ControllerBase
         if (ticket == null)
             return NotFound(new { message = "Ticket not found" });
 
-        //  Generate PDF using QuestPDF, iTextSharp, or similar
-        // For now, returning placeholder in  JSON
+        
         return Ok(new
         {
             message = "PDF generation endpoint - implement with QuestPDF or similar",

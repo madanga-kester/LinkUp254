@@ -8,10 +8,10 @@ namespace LinkUp254.Features.Group.Messages
         [Required]
         public string ThreadName { get; set; } = string.Empty;
 
-        // Users participating in this thread
+      
         public ICollection<User> Participants { get; set; } = new List<User>();
 
-        // Messages in this thread
+     
         public ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
 
         public ChatThread() { }

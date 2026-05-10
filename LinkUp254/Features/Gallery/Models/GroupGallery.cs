@@ -7,7 +7,7 @@ namespace LinkUp254.Features.Gallery.Models;
 [Table("GroupGallery")]
 public class GroupGallery : BaseEntity
 {
-    // Id, CreatedAt, UpdatedAt, and IsActive are inherited from BaseEntity.
+    
 
     public int GroupId { get; set; }
 
@@ -20,6 +20,6 @@ public class GroupGallery : BaseEntity
     [MaxLength(200)]
     public string? Caption { get; set; }
 
-    // ADDED: Upload timestamp (required by service mapping)
+    
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
 }

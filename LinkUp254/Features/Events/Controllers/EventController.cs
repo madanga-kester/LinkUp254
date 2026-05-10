@@ -89,7 +89,7 @@ public class EventController : ControllerBase
     {
         var userId = GetAuthenticatedUserId();
 
-        // Track view count (fire-and-forget, non-critical)
+        // Track view count 
         _ = _engagementServices.IncrementViewCountAsync(id); 
 
         var result = await _eventServices.GetEventWithTicketsAsync(id, userId);
@@ -108,13 +108,13 @@ public class EventController : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Unauthorized(new { message = "Authentication required" });
 
-        // Get all events for organizer (service returns List<Event>)
+        // Get all events for organizer 
         var allEvents = await _eventServices.GetEventsByOrganizerAsync(int.Parse(userId));
 
-        // Apply pagination manually
+       
         var total = allEvents.Count;
         var pagedEvents = allEvents
-            .OrderByDescending(e => e.CreatedAt) // Show newest first
+            .OrderByDescending(e => e.CreatedAt) 
             .Skip(offset)
             .Take(limit)
             .ToList();
@@ -283,7 +283,7 @@ public class EventController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            // Handle business logic errors (event full, not found, etc.)
+            
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
@@ -354,7 +354,7 @@ public class EventController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "GetEventSocialContext failed for user {UserId} on event {EventId}", userId, id);
-            // Return safe defaults on error (service already handles this, but extra safety)
+            
             return Ok(new SocialContextDto
             {
                 FriendsGoing = 0,
@@ -574,15 +574,6 @@ public class EventController : ControllerBase
         if (eventEntity == null || eventEntity.OrganizerId != userId.Value)
             return NotFound(new { message = "Event not found" });
 
-
-
-        //var webRoot = Path.Combine(AppContext.BaseDirectory, "wwwroot");
-        //var uploadsFolder = Path.Combine(webRoot, "uploads", "events");
-        //Directory.CreateDirectory(uploadsFolder);
-
-        //var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        //var uniqueFileName = $"event_{id}_{Guid.NewGuid():N}{extension}";
-        //var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
 
 

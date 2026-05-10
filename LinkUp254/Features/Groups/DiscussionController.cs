@@ -72,14 +72,6 @@ public class DiscussionController : ControllerBase
 
 
 
-    // POST: api/discussions/reactions/{targetType}/{targetId} - Toggle reaction
-    //[HttpPost("reactions/{targetType}/{targetId:int}")]
-    //[Authorize]
-    //public async Task<IActionResult> ToggleReaction(string targetType, int targetId, [FromBody] ToggleReactionDto dto)
-    //{
-    //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-
-
 
     // POST: api/discussions/reactions/{targetType}/{targetId} - Toggle reaction
     [HttpPost("reactions/{targetType}/{targetId:int}")]

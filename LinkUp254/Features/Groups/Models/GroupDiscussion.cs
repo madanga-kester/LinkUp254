@@ -40,6 +40,6 @@ public class GroupDiscussion
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
-    // Optional: Track if promoted from chat
+  
     public int? SourceMessageId { get; set; }
 }

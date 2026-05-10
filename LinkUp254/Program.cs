@@ -137,10 +137,45 @@ builder.Services.AddAuthentication(options =>
         NameClaimType = "sub",
         RoleClaimType = "Role"
     };
+
+
+
+
+
+
+
+
+
+    //options.Events = new JwtBearerEvents
+    //{
+    //    OnAuthenticationFailed = context =>
+    //    {
+    //        if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+    //        {
+    //            context.Response.Headers.Append("Token-Expired", "true");
+    //        }
+    //        return Task.CompletedTask;
+    //    },
+    //    OnChallenge = context =>
+    //    {
+    //        context.HandleResponse();
+    //        context.Response.StatusCode = 401;
+    //        context.Response.ContentType = "application/json";
+    //        return context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
+    //        {
+    //            message = "Authentication failed",
+    //            error = context.Error,
+    //            errorDescription = context.ErrorDescription
+    //        }));
+    //    }
+    //};
+
+
     options.Events = new JwtBearerEvents
     {
         OnAuthenticationFailed = context =>
         {
+            Console.WriteLine($"[JWT FAIL] Type: {context.Exception.GetType().Name} | Message: {context.Exception.Message}");
             if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
             {
                 context.Response.Headers.Append("Token-Expired", "true");
@@ -149,8 +184,9 @@ builder.Services.AddAuthentication(options =>
         },
         OnChallenge = context =>
         {
+            Console.WriteLine($"[JWT CHALLENGE] Error: {context.Error} | Description: {context.ErrorDescription}");
             context.HandleResponse();
-            context.Response.StatusCode = 401;
+            context.Response.StatusCode = 01;
             context.Response.ContentType = "application/json";
             return context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
             {
@@ -158,8 +194,21 @@ builder.Services.AddAuthentication(options =>
                 error = context.Error,
                 errorDescription = context.ErrorDescription
             }));
+        },
+        OnTokenValidated = context =>
+        {
+            var claims = string.Join(", ", context.Principal.Claims.Select(c => $"{c.Type}={c.Value}"));
+            Console.WriteLine($"[JWT OK] User: {context.Principal.Identity?.Name} | Claims: {claims}");
+            return Task.CompletedTask;
         }
     };
+
+
+
+
+
+
+
 });
 
 
@@ -196,6 +245,15 @@ builder.Services.AddCors(options =>
               .WithExposedHeaders("Content-Disposition", "Token-Expired");
     });
 });
+
+
+
+
+
+
+
+
+
 
 builder.Services.AddHealthChecks();
 
